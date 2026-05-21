@@ -1476,6 +1476,9 @@ class IBapi:
                     "Connected to IB API at %s:%d (clientId=%d).",
                     self.host, self.port, self.client_id,
                 )
+                if self.port == 7497:
+                    self.ib.reqMarketDataType(3)
+                    logger.info("Paper trading account — using delayed market data (type 3).")
                 return
             except Exception as exc:
                 logger.error("IB connection error: %s — retrying in 10 s.", exc)
