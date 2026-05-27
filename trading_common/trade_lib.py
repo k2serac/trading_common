@@ -1441,6 +1441,45 @@ class ClaudeSentiment:
 
 
 # ---------------------------------------------------------------------------
+# IBapi helpers
+# ---------------------------------------------------------------------------
+
+def ensure_ibkr_connected(ib: IB, host: str, port: int, client_id: int) -> None:
+    """Verify the IBKR connection is alive and reconnect if needed.
+
+    isConnected() alone can miss stale sessions — e.g. TWS's 24-hour
+    auto-disconnect where the socket appears open but the session has expired.
+    reqCurrentTime() is a lightweight roundtrip that catches those cases before
+    the first real API call fails.
+    """
+    if not ib.isConnected():
+        logger.warning("IBKR not connected — reconnecting...")
+        _ibkr_reconnect(ib, host, port, client_id)
+        return
+    try:
+        ib.reqCurrentTime()
+    except Exception as exc:
+        logger.warning("IBKR heartbeat failed (%s) — session likely expired; reconnecting...", exc)
+        try:
+            ib.disconnect()
+        except Exception:
+            pass
+        _ibkr_reconnect(ib, host, port, client_id)
+
+
+def _ibkr_reconnect(ib: IB, host: str, port: int, client_id: int) -> None:
+    """Connect to TWS / IB Gateway, retrying every 10 s until successful."""
+    while True:
+        try:
+            ib.connect(host, port, clientId=client_id)
+            logger.info("Connected to IB API at %s:%d (clientId=%d).", host, port, client_id)
+            return
+        except Exception as exc:
+            logger.error("IB connection error: %s — retrying in 10 s.", exc)
+            time.sleep(10)
+
+
+# ---------------------------------------------------------------------------
 # IBapi
 # ---------------------------------------------------------------------------
 
@@ -1491,6 +1530,10 @@ class IBapi:
             return True
         logger.warning("IBKR not connected — check TWS/Gateway status and API settings.")
         return False
+
+    def ensure_connected(self) -> None:
+        """Verify the connection is alive and reconnect if needed (see ensure_ibkr_connected)."""
+        ensure_ibkr_connected(self.ib, self.host, self.port, self.client_id)
 
     def disconnect(self) -> None:
         """Disconnect from TWS / IB Gateway."""
@@ -1567,6 +1610,13 @@ class IBapi:
                     "Ambiguous contract for %s — found %d matches.",
                     symbol, len(qualified),
                 )
+                return None
+
+            # ib_async returns the unqualified contract (conId=0) when IBKR
+            # sends Error 200 "No security definition" — skip the historical
+            # data request to avoid a second Error 200 and an IndexError.
+            if qualified[0].conId == 0:
+                logger.warning("Symbol %s not found on IBKR — no closing price.", symbol)
                 return None
 
             bars = self.ib.reqHistoricalData(
