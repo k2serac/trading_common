@@ -41,6 +41,16 @@ from openbb import obb
 # ---------------------------------------------------------------------------
 logger = logging.getLogger(__name__)
 
+_STALE_NEWS_PREFIXES = re.compile(
+    r"^(reported earlier|previously reported|breaking earlier|earlier reported)",
+    re.IGNORECASE,
+)
+
+
+def _is_stale_news(title: str) -> bool:
+    """Return True if the headline is a re-report of older news."""
+    return bool(_STALE_NEWS_PREFIXES.match(title.strip()))
+
 MARKET_TZ = ZoneInfo("America/New_York")
 
 
@@ -434,6 +444,11 @@ class Obb:
             checksum = hashlib.md5(f"{title}_{updated}".encode()).hexdigest()
             if checksum in self._checksum_cache:
                 logger.debug("Already processed '%s' — skipping.", title)
+                continue
+
+            if _is_stale_news(title):
+                logger.info("Skipping stale/re-reported headline: %s", title)
+                self._checksum_cache[checksum] = datetime.now()
                 continue
 
             logger.info("Processing: [%s] %s", updated, title)
@@ -875,6 +890,11 @@ class Massive:
             checksum = hashlib.md5(f"{title}_{updated}".encode()).hexdigest()
             if checksum in self._checksum_cache:
                 logger.debug("Already processed '%s' — skipping.", title)
+                continue
+
+            if _is_stale_news(title):
+                logger.info("Skipping stale/re-reported headline: %s", title)
+                self._checksum_cache[checksum] = datetime.now()
                 continue
 
             logger.info("Processing: [%s] %s", updated, title)
