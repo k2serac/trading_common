@@ -42,7 +42,7 @@ from openbb import obb
 logger = logging.getLogger(__name__)
 
 _STALE_NEWS_PREFIXES = re.compile(
-    r"^(reported earlier|previously reported|breaking earlier|earlier reported)",
+    r"^(reported\s+earlier|previously\s+reported|breaking\s+earlier|earlier\s+reported)",
     re.IGNORECASE,
 )
 
