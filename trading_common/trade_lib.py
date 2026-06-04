@@ -490,7 +490,7 @@ class Obb:
         ``updated_since`` is not set.
         """
         if retention_minutes is None:
-            retention_minutes = (self.updated_since * 5) if self.updated_since else 60
+            retention_minutes = (self.updated_since * 5) if self.updated_since else 720
 
         cutoff = datetime.now()
         stale = [
@@ -927,7 +927,7 @@ class Massive:
 
         return matched
 
-    def clean_old_checksums(self, retention_minutes: int = 60) -> None:
+    def clean_old_checksums(self, retention_minutes: int = 720) -> None:
         """Evict checksum entries older than ``retention_minutes``."""
         cutoff = datetime.now()
         stale = [
