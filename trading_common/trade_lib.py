@@ -1739,7 +1739,7 @@ class IBapi:
         elif order_type == "limit":
             if limit is None:
                 raise ValueError("'limit' price is required for a limit order.")
-            ib_order = LimitOrder(action, qty, limit, outsideRth=True)
+            ib_order = LimitOrder(action, qty, limit, outsideRth=True, tif="GTC")
 
         elif order_type == "stop":
             if stop is None:
