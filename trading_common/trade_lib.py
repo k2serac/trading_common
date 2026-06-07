@@ -440,8 +440,11 @@ class Obb:
             symbols: str = row["symbols"]
             body: str = row.get("body", "") or ""  # full article text; may be absent
 
-            # Dedup: skip headlines we have already acted on
-            checksum = hashlib.md5(f"{title}_{updated}".encode()).hexdigest()
+            # Dedup: skip headlines we have already acted on.
+            # Key on title+symbols (not title+updated) because Benzinga refreshes
+            # the updated timestamp on the same article every hour, which would
+            # otherwise defeat the checksum cache and cause repeated processing.
+            checksum = hashlib.md5(f"{title}_{symbols}".encode()).hexdigest()
             if checksum in self._checksum_cache:
                 logger.debug("Already processed '%s' — skipping.", title)
                 continue
@@ -887,7 +890,7 @@ class Massive:
             symbols: str = row["symbols"]
             body: str = row.get("body", "") or ""
 
-            checksum = hashlib.md5(f"{title}_{updated}".encode()).hexdigest()
+            checksum = hashlib.md5(f"{title}_{symbols}".encode()).hexdigest()
             if checksum in self._checksum_cache:
                 logger.debug("Already processed '%s' — skipping.", title)
                 continue
