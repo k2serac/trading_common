@@ -1713,6 +1713,7 @@ class IBapi:
         stop: float | None = None,
         limit: float | None = None,
         trade_strategy: str = "",
+        stop_loss_pct: float | None = None,
     ):
         """Place an order for the given symbol.
 
@@ -1725,6 +1726,9 @@ class IBapi:
             limit:           Limit price — required for ``limit`` and ``stop_limit``.
             trade_strategy:  ``TradeStrategy`` value embedded in the order reference
                              (e.g. ``"PharmaDrugApproval"``).
+            stop_loss_pct:   If set and order is a limit BUY, attach a stop-loss SELL
+                             child order at ``limit * (1 - stop_loss_pct / 100)``.
+                             IBKR only activates the child once the parent fills.
 
         Returns:
             The :class:`ib_async.Trade` object, or ``None`` on error.
@@ -1756,7 +1760,9 @@ class IBapi:
                 f"Unknown order type '{order}'. Valid values: market, limit, stop, stop_limit."
             )
 
-        ib_order.transmit = True
+        attach_stop = stop_loss_pct is not None and order_type == "limit" and action == "BUY"
+
+        ib_order.transmit = not attach_stop
         ib_order.outsideRth = True
         ib_order.orderRef = (
             f"AlgoUSTrade_{trade_strategy}_{datetime.now().strftime('%Y%m%d')}"
@@ -1770,6 +1776,20 @@ class IBapi:
             "Order placed — %s %d %s [%s] stop=%s limit=%s",
             action, qty, symbol, order_type, stop, limit,
         )
+
+        if attach_stop:
+            stop_price = round(limit * (1 - stop_loss_pct / 100), 2)
+            sl_order = StopOrder("SELL", qty, stop_price, outsideRth=True, tif="GTC")
+            sl_order.parentId = ib_order.orderId
+            sl_order.transmit = True
+            sl_order.outsideRth = True
+            sl_order.orderRef = ib_order.orderRef
+            self.ib.placeOrder(contract, sl_order)
+            logger.info(
+                "Stop-loss attached — SELL %d %s STOP %.2f (%.1f%% below limit)",
+                qty, symbol, stop_price, stop_loss_pct,
+            )
+
         return trade
 
 
