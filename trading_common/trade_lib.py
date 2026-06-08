@@ -1166,15 +1166,19 @@ class ClaudeSentiment:
 
     _VERIFY_SYSTEM_PROMPT = (
         "You are a financial news researcher. Search the web to determine whether the "
-        "following news headline represents genuinely new information or was already "
-        "publicly known before today's pre-market session.\n\n"
+        "following news headline represents genuinely new information that has NOT yet "
+        "been reflected in the stock price.\n\n"
         "Specifically check:\n"
         "- When the core event (deal, approval, partnership, announcement) was first reported\n"
-        "- Whether any financial news source published the same story more than 4 hours ago\n\n"
-        "If the news is genuinely new (published within the last 4 hours), "
-        "return already_priced_in=false.\n"
-        "If the same event was already widely reported before that window, "
-        "return already_priced_in=true.\n"
+        "- Whether any financial news source published the same story more than 4 hours ago\n"
+        "- What the stock's percentage change is TODAY vs yesterday's close — "
+        "if it has already moved more than 5% in the direction implied by the news, "
+        "the market has already priced in the catalyst\n\n"
+        "Return already_priced_in=true if ANY of the following apply:\n"
+        "- The same event was already widely reported more than 4 hours ago\n"
+        "- The stock has already moved 5% or more today in the direction of the catalyst\n\n"
+        "Return already_priced_in=false only if the news is fresh AND the stock has not "
+        "yet moved significantly.\n"
         "When in doubt, return already_priced_in=false.\n\n"
         "Respond ONLY with JSON — no markdown, no extra text:\n"
         '{"already_priced_in": true|false, "reason": "<one sentence>"}'
@@ -1735,12 +1739,23 @@ class IBapi:
             bars = self.ib.reqHistoricalData(
                 contract,
                 endDateTime="",
-                durationStr="2 D",
+                durationStr="3 D",
                 barSizeSetting="1 day",
                 whatToShow="TRADES",
                 useRTH=True,
                 formatDate=1,
             )
+            if not bars:
+                return None
+            # After RTH close the most recent bar is today's session, which
+            # already reflects any news-driven intraday move. Use the previous
+            # session's close as the pre-news reference so MaxVarFromClose
+            # caps the limit relative to where the stock was BEFORE the catalyst.
+            et = pytz.timezone("America/New_York")
+            now_et = datetime.now(et)
+            after_hours = now_et.hour >= 16
+            if after_hours and len(bars) >= 2:
+                return bars[-2].close
             return bars[-1].close
         except Exception as exc:
             logger.error("Error retrieving closing price for %s: %s", symbol, exc)
