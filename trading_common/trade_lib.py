@@ -1164,12 +1164,29 @@ class ClaudeSentiment:
         "  reason      — plain-English justification of your yes/no decision"
     )
 
+    _VERIFY_SYSTEM_PROMPT = (
+        "You are a financial news researcher. Search the web to determine whether the "
+        "following news headline represents genuinely new information or was already "
+        "publicly known before today's pre-market session.\n\n"
+        "Specifically check:\n"
+        "- When the core event (deal, approval, partnership, announcement) was first reported\n"
+        "- Whether any financial news source published the same story more than 4 hours ago\n\n"
+        "If the news is genuinely new (published within the last 4 hours), "
+        "return already_priced_in=false.\n"
+        "If the same event was already widely reported before that window, "
+        "return already_priced_in=true.\n"
+        "When in doubt, return already_priced_in=false.\n\n"
+        "Respond ONLY with JSON — no markdown, no extra text:\n"
+        '{"already_priced_in": true|false, "reason": "<one sentence>"}'
+    )
+
     def __init__(
         self,
         model: str = "claude-opus-4-6",
         prompts_dir: str = "config/prompts",
         context_dir: str = "config/context",
         use_web_search: bool = False,
+        web_search_verify: bool = False,
     ) -> None:
         if not os.environ.get("ANTHROPIC_API_KEY"):
             raise EnvironmentError(
@@ -1178,13 +1195,15 @@ class ClaudeSentiment:
             )
         self.model = model
         self._use_web_search = use_web_search
+        self.web_search_verify = web_search_verify
         self._client = anthropic.Anthropic()
         self._prompts: dict[str, str] = self._load_prompts(prompts_dir)
         self._context: dict[str, str] = self._load_context(context_dir)
         # Keyed on MD5(title + strategy) — survives timestamp changes on re-fetched articles
         self._sentiment_cache: dict[str, dict] = {}
         logger.info(
-            "ClaudeSentiment initialised — web_search=%s.", use_web_search
+            "ClaudeSentiment initialised — web_search=%s web_search_verify=%s.",
+            use_web_search, web_search_verify,
         )
 
     @staticmethod
@@ -1405,6 +1424,77 @@ class ClaudeSentiment:
             except Exception as exc:
                 logger.error("Claude API error for '%s': %s", title, exc)
                 return {"is_positive": False, "reason": f"api error: {type(exc).__name__}"}
+
+    def verify_not_priced_in(
+        self,
+        title: str,
+        body: str = "",
+        symbol: str = "",
+    ) -> dict:
+        """Web-search check on a positive signal: is this news already priced in?
+
+        Called only after sentiment scored positive, so web search cost is incurred
+        only for genuine trade candidates. Defaults to ``already_priced_in=False``
+        on any error so a bad network day doesn't silently block all trades.
+
+        Returns a dict with ``already_priced_in`` (bool) and ``reason`` (str).
+        """
+        parts = [f'Headline: "{title}"']
+        if symbol:
+            parts.append(f"Ticker: {symbol}")
+        if body:
+            parts.append(f"Article body:\n{body}")
+        user_content = "\n\n".join(parts)
+
+        tools = [{"type": "web_search_20250305", "name": "web_search", "max_uses": 3}]
+        messages = [{"role": "user", "content": user_content}]
+        system = [{"type": "text", "text": self._VERIFY_SYSTEM_PROMPT,
+                   "cache_control": {"type": "ephemeral"}}]
+
+        logger.info("Web-search verify: checking if '%s' is already priced in.", title)
+        try:
+            for _ in range(6):
+                response = self._client.messages.create(
+                    model=self.model,
+                    max_tokens=512,
+                    system=system,
+                    messages=messages,
+                    tools=tools,
+                )
+                if response.stop_reason == "end_turn":
+                    raw = next(
+                        (b.text for b in response.content if hasattr(b, "text")), "{}"
+                    )
+                    result = json.loads(raw)
+                    logger.info(
+                        "Web-search verify [%s]: already_priced_in=%s — %s",
+                        symbol, result.get("already_priced_in"), result.get("reason"),
+                    )
+                    return result
+                if response.stop_reason == "tool_use":
+                    messages.append({"role": "assistant", "content": response.content})
+                    tool_results = []
+                    for block in response.content:
+                        if getattr(block, "type", "") == "tool_use":
+                            result_block = next(
+                                (b for b in response.content
+                                 if getattr(b, "tool_use_id", None) == block.id),
+                                None,
+                            )
+                            tool_results.append({
+                                "type": "tool_result",
+                                "tool_use_id": block.id,
+                                "content": getattr(result_block, "content", ""),
+                            })
+                    messages.append({"role": "user", "content": tool_results})
+                    continue
+                break
+        except json.JSONDecodeError as exc:
+            logger.error("Web-search verify parse error for '%s': %s", title, exc)
+        except Exception as exc:
+            logger.error("Web-search verify error for '%s': %s", title, exc)
+
+        return {"already_priced_in": False, "reason": "verification error — defaulting to trade"}
 
     def analyze_sentiment(self, matched_config: dict, journal=None) -> dict:
         """Classify sentiment for each matched news item.
