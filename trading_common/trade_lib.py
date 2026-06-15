@@ -1796,6 +1796,44 @@ class IBapi:
             logger.error("Error retrieving current price for %s: %s", symbol, exc)
             return None
 
+    def get5MinBars(self, symbol: str) -> list | None:
+        """Return today's 5-minute TRADES bars for ``symbol``.
+
+        Fetches one calendar day with ``useRTH=False`` so the full session
+        is available; callers filter to RTH bars (≥ 09:30) themselves.
+
+        Returns:
+            A list of :class:`ib_async.BarData` objects, or ``None`` on error.
+        """
+        try:
+            contract = Stock(symbol, "SMART", "USD")
+            self.ib.qualifyContracts(contract)
+            bars = self.ib.reqHistoricalData(
+                contract,
+                endDateTime="",
+                durationStr="1 D",
+                barSizeSetting="5 mins",
+                whatToShow="TRADES",
+                useRTH=False,
+                formatDate=1,
+            )
+            return bars if bars else None
+        except Exception as exc:
+            logger.error("Error fetching 5-min bars for %s: %s", symbol, exc)
+            return None
+
+    def cancelOrder(self, order) -> None:
+        """Fire-and-forget order cancellation (no wait for confirmation).
+
+        Use :meth:`closeTrade` when you need to wait for the ``Cancelled``
+        status; use this for bracket-stop cleanup before a market exit.
+        """
+        try:
+            self.ib.cancelOrder(order)
+            logger.info("Cancellation sent for orderId=%s.", getattr(order, 'orderId', '?'))
+        except Exception as exc:
+            logger.error("cancelOrder failed for orderId=%s: %s", getattr(order, 'orderId', '?'), exc)
+
     def getOrderReference(self, pos) -> str | None:
         """Return the ``orderRef`` string for the trade that opened ``pos``.
 
