@@ -1694,20 +1694,33 @@ class IBapi:
             logger.error("Error retrieving trades: %s", exc)
             return None
 
-    def closeTrade(self, trade) -> None:
+    def closeTrade(self, trade, timeout: int = 30) -> bool:
         """Cancel an open order and wait for confirmation.
 
         Args:
-            trade: A :class:`ib_async.Trade` object returned by :meth:`getTrades`.
+            trade:   A :class:`ib_async.Trade` object returned by :meth:`getTrades`.
+            timeout: Maximum seconds to wait for the Cancelled status (default 30).
+
+        Returns:
+            ``True`` if the order reached Cancelled status, ``False`` if timed out.
         """
         self.ib.cancelOrder(trade.order)
         logger.info("Cancellation requested for order ID: %s.", trade.order.orderId)
 
+        elapsed = 0
         while trade.orderStatus.status != "Cancelled":
+            if elapsed >= timeout:
+                logger.warning(
+                    "Timed out waiting for order %s to cancel (status=%s) — proceeding anyway.",
+                    trade.order.orderId, trade.orderStatus.status,
+                )
+                return False
             self.ib.sleep(1)
+            elapsed += 1
             logger.debug("Order status: %s", trade.orderStatus.status)
 
         logger.info("Order %s successfully cancelled.", trade.order.orderId)
+        return True
 
     def getClosingPrice(self, symbol: str) -> float | None:
         """Return the most recent daily closing price for ``symbol``.
