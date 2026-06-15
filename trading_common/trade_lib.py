@@ -1835,6 +1835,30 @@ class IBapi:
             logger.error("Error fetching 5-min bars for %s: %s", symbol, exc)
             return None
 
+    def getDailyBars(self, symbol: str, days: int) -> list | None:
+        """Return ``days`` calendar days of daily TRADES bars for ``symbol``.
+
+        Returns bars sorted oldest-first, or ``None`` on error.  Pass a value
+        slightly larger than your MA period (e.g. ``ma_period + 10``) to
+        ensure enough bars survive weekend/holiday gaps.
+        """
+        try:
+            contract = Stock(symbol, "SMART", "USD")
+            self.ib.qualifyContracts(contract)
+            bars = self.ib.reqHistoricalData(
+                contract,
+                endDateTime="",
+                durationStr=f"{days} D",
+                barSizeSetting="1 day",
+                whatToShow="TRADES",
+                useRTH=True,
+                formatDate=1,
+            )
+            return bars if bars else None
+        except Exception as exc:
+            logger.error("Error fetching daily bars for %s: %s", symbol, exc)
+            return None
+
     def cancelOrder(self, order) -> None:
         """Fire-and-forget order cancellation (no wait for confirmation).
 
