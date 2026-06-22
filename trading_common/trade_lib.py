@@ -1823,9 +1823,18 @@ class IBapi:
                 barSizeSetting="5 mins",
                 whatToShow="TRADES",
                 useRTH=False,
-                formatDate=1,
+                # formatDate=2 returns Unix epoch -> tz-aware UTC, independent of
+                # the TWS-configured timezone. We then normalise every bar to ET
+                # so callers can compare bar.date.hour/minute against RTH
+                # boundaries (09:30, 16:00) without a timezone ambiguity.
+                formatDate=2,
             )
-            return bars if bars else None
+            if not bars:
+                return None
+            for b in bars:
+                if isinstance(b.date, datetime):
+                    b.date = b.date.astimezone(MARKET_TZ)
+            return bars
         except Exception as exc:
             logger.error("Error fetching 5-min bars for %s: %s", symbol, exc)
             return None
