@@ -482,7 +482,7 @@ class Obb:
                     # Multiple tickers — skip; trade leg is ambiguous
                     continue
 
-                matched[symbols] = {**cfg_row.to_dict(), "title": title, "body": body}
+                matched[symbols] = {**cfg_row.to_dict(), "title": title, "body": body, "updated": updated}
 
         return matched
 
@@ -825,16 +825,22 @@ class Massive:
         """
         import requests as _requests
 
+        # The Massive/Benzinga API expects published.gte/lte in UTC. from_time
+        # and to_time are timezone-aware ET datetimes, so they MUST be converted
+        # to UTC before formatting — otherwise the "Z" label is a lie and every
+        # query is shifted by the ET↔UTC offset (4h in summer), making the bot
+        # fetch ~4 hours of stale news and miss fresh pre-market catalysts.
+        _utc = ZoneInfo("UTC")
         params: dict = {"limit": self.limit, "sort": "published.asc"}
         if from_time is not None:
-            params["published.gte"] = from_time.strftime("%Y-%m-%dT%H:%M:%SZ")
+            params["published.gte"] = from_time.astimezone(_utc).strftime("%Y-%m-%dT%H:%M:%SZ")
             logger.info(
                 "Fetching Massive news: %s → %s",
                 from_time.strftime("%Y-%m-%d %H:%M %Z"),
                 (to_time.strftime("%Y-%m-%d %H:%M %Z") if to_time else "now"),
             )
         if to_time is not None:
-            params["published.lte"] = to_time.strftime("%Y-%m-%dT%H:%M:%SZ")
+            params["published.lte"] = to_time.astimezone(_utc).strftime("%Y-%m-%dT%H:%M:%SZ")
 
         url: str | None = self._base_url + self._NEWS_PATH
         rows: list[dict] = []
@@ -926,7 +932,7 @@ class Massive:
                 if "," in symbols:
                     continue
 
-                matched[symbols] = {**cfg_row.to_dict(), "title": title, "body": body}
+                matched[symbols] = {**cfg_row.to_dict(), "title": title, "body": body, "updated": updated}
 
         return matched
 
