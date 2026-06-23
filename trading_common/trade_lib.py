@@ -1763,8 +1763,8 @@ class IBapi:
                 return None
             # After RTH close the most recent bar is today's session, which
             # already reflects any news-driven intraday move. Use the previous
-            # session's close as the pre-news reference so MaxVarFromClose
-            # caps the limit relative to where the stock was BEFORE the catalyst.
+            # session's close as the pre-news reference so the reaction band
+            # measures the move relative to where the stock was BEFORE the catalyst.
             et = pytz.timezone("America/New_York")
             now_et = datetime.now(et)
             after_hours = now_et.hour >= 16
