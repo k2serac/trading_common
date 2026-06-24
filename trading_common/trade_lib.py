@@ -1376,7 +1376,7 @@ class ClaudeSentiment:
                         raw = next(
                             (b.text for b in response.content if hasattr(b, "text")), "{}"
                         )
-                        result = json.loads(raw)
+                        result = self._extract_json(raw)
                         self._sentiment_cache[cache_key] = result
                         return result
 
@@ -1430,6 +1430,21 @@ class ClaudeSentiment:
                 logger.error("Claude API error for '%s': %s", title, exc)
                 return {"is_positive": False, "reason": f"api error: {type(exc).__name__}"}
 
+    @staticmethod
+    def _extract_json(raw: str) -> dict:
+        """Parse a JSON object from a model response, tolerating markdown code
+        fences and surrounding prose. Claude often wraps the JSON in
+        ```json ... ``` or adds explanatory text (especially when web search is
+        involved), which breaks a bare json.loads()."""
+        s = (raw or "").strip()
+        fence = re.search(r"```(?:json)?\s*(.*?)```", s, re.DOTALL)
+        if fence:
+            s = fence.group(1).strip()
+        start, end = s.find("{"), s.rfind("}")
+        if start != -1 and end != -1 and end > start:
+            s = s[start:end + 1]
+        return json.loads(s)
+
     def verify_not_priced_in(
         self,
         title: str,
@@ -1470,7 +1485,7 @@ class ClaudeSentiment:
                     raw = next(
                         (b.text for b in response.content if hasattr(b, "text")), "{}"
                     )
-                    result = json.loads(raw)
+                    result = self._extract_json(raw)
                     logger.info(
                         "Web-search verify [%s]: already_priced_in=%s — %s",
                         symbol, result.get("already_priced_in"), result.get("reason"),
