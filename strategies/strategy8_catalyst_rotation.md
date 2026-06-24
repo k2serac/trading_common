@@ -1,0 +1,137 @@
+# Strategy 8 — Catalyst-Momentum Rotation
+
+## Thesis
+
+The **multi-day swing evolution** of us_news_stock_bot. Instead of enter-on-catalyst /
+exit-same-day, hold a **ranked portfolio** of catalyst-driven single stocks, re-scored daily,
+rotating capital out of decaying names and into fresh high-score ones.
+
+It exists to capture the **2–5 day post-news drift** that same-day exit leaves on the table — with
+a mechanical, score-driven *"let winners run, cut losers"* that sidesteps the beta-noise problem
+(a position down on a red day isn't a loser if it beat the market). Cousin of Strategy 6 (rotation +
+scoring) but single-stock and catalyst-driven, not ETF/social.
+
+## The Decaying Conviction Score (core idea)
+
+Think of the score as components with different lifespans:
+
+```
+score = catalyst_component (decays over the news drift window)
+      + momentum/alpha_component (is it following through vs the market?)
+      + trend/regime_component
+```
+
+- **Fresh catalyst → full weight**, then **decays over ~2–5 days** — the exit-timing study gives the
+  decay *rate* (and it differs by strategy: upgrades fade fast, AINews slower). Closed loop.
+- **A new catalyst resets the clock → "catalyst stacking."** A second initiation from another broker
+  re-freshens the score and compounds conviction → keep the name.
+- **No fresh catalyst + decayed + price stalling/falling → score drops below threshold → sell.**
+- **The score *is* the sell rule** — no separate exit logic. A name leaves the book when its score
+  falls below the cut or below a fresher candidate.
+
+## The Conviction Score — Final Factor Set
+
+Guiding principle: **never score on what an upstream filter — or the catalyst universe itself —
+already compresses** (no variance = no predictive power). A tight orthogonal set beats a kitchen
+sink (less overfitting, robust out-of-sample, interpretable).
+
+| Factor | Measures (level) | When usable | Source | Status |
+|---|---|---|---|---|
+| **ma_trend** | stock vs itself — price > 20 > 50 SMA ("not a falling knife") | **entry** | yfinance + pandas-ta | prior |
+| **alpha** | stock vs market (idiosyncratic) | **hold** (needs ≥1 day) | yfinance vs SPY/sector | ✅ validated |
+| **sector_trend** | sector ETF vs market (1-mo return / above-EMA) | both | sector ETFs via yfinance | prior |
+| **market_regime** | the market itself (SPY vs 50-SMA, VIX) | both | yfinance | prior |
+| **freshness** | catalyst decay over time (temporal axis) | both | days since catalyst | prior (rate from exit study) |
+
+Layout = **stock + sector + market** (space) + **freshness** (time), with momentum covered at *both*
+ends (`ma_trend` at entry, `alpha` on the hold). One-line story: *"Is this stock in a healthy
+uptrend, outperforming the market, in a strong sector, in a friendly regime — and is the catalyst
+still fresh?"* All factors are reconstructable from price history + the trade journal, so the scorer
+is a pure research build with nothing to change live.
+
+**Pruned out (and why):** `catalyst_strength` (Claude's gate already selects strong catalysts →
+compressed); `PT-upside %` (the upgrade prompt already requires a large price target → compressed,
+and analyst-only); `entry_gap` (MaxVarFromNews already filters it); `rvol` (overlaps with alpha,
+and every catalyst spikes volume by nature → compressed); `market_cap` (predicts move *magnitude /
+volatility*, not direction — it's a position-sizing input, not a conviction signal).
+
+**Corollary:** the current bot's filters (Claude + MaxVar + liquidity) already nail *entry*
+selection, so a conviction score adds little at entry — its value is the multi-day **hold/rotation**
+decision (where `alpha` + `freshness` carry the variance). That's why the score belongs to
+Strategy 8, not the current same-day bot.
+
+## Score Methodology & Weighting (let the data assign the weights)
+
+Normalize each factor to 0–100 (percentile / z-score), direction-align, weighted sum → 1–100. Use
+the score primarily for **position sizing** (small on a 40, full on an 85), not just filtering.
+
+Weights are the hard part — you can't know them a priori, and you shouldn't guess. Three stages,
+gated by sample size:
+1. **Now (~40 noisy trades): equal weight.** Famously robust when data is thin; a baseline to beat.
+2. **~50–150 trades: Information Coefficient.** Test each factor's correlation with forward outcome
+   (the exit-study alpha label); drop near-zero-IC factors; *gently* tilt toward the high-IC ones.
+3. **200+ trades: regularized regression.** Ridge/Lasso (regularization is non-negotiable — it stops
+   overfitting; Lasso auto-drops dead features), cross-validated. Trees only once you're in the
+   hundreds and want interactions.
+
+**Label = forward 3-day *alpha*** (market-relative — strips the beta noise).
+
+## Daily Ranked Rebalance
+
+Hold top-N by score; each day sell decayed names, buy fresh high-score ones. Non-negotiable
+add-ons so it isn't naive:
+- **Hysteresis / a swap margin** — only replace a held name if a new candidate beats it by a
+  *meaningful* margin (else you churn daily on tiny score differences).
+- **Caps** — max ~10 names, 1–2 swaps/day.
+
+**Turnover is *lower* than the current intraday bot, not higher.** Today's model round-trips *every*
+position *every* day to capture one day's move (zero amortization); Strategy 8 holds names multi-day
+and rotates only 1–2/day, so each round-trip captures the full 3–5 day drift. The right metric is
+**cost per unit of move captured**, where multi-day holds win — and spread/slippage (bigger than
+commission on a small account) favors it for the same reason. Hysteresis is for avoiding churn, not
+because turnover is inherently high.
+
+## The Pipeline This Completes
+
+- **Conviction score** = the **features** (the 5-factor table above)
+- **Exit-timing study** (`us_news_stock_bot/research/exit_timing_study.py`) = the **labels** (forward alpha / MFE)
+- **Rotation framework** = the **deployment** (a live, self-managing swing portfolio)
+
+## Validation Plan
+
+Backtesting a rotation cleanly is hard (needs historical catalysts + scores + prices), so it's a
+**forward paper-trade** validation, like Strategy 6/7 — and *gated* on first proving the score works:
+
+1. Build a v1 scorer (`research/conviction_score.py`) from the 5 factors.
+2. Run it **retrospectively** vs the exit-study P&L and **prove score → forward alpha correlates**
+   (the IC step). If `alpha`/`freshness` don't predict, stop here.
+3. Only then design the rotation portfolio — as its own strategy (a portfolio manager, not a
+   retrofit of the intraday bot).
+
+## Open Decisions (to resolve before building)
+
+- N (portfolio size), swap margin / hysteresis threshold, max turnover.
+- Decay function shape (linear vs exponential) and rate per catalyst type (from the exit study).
+- Score → position-size mapping (tiers).
+- Whether to reuse the us_news news+Claude pipeline or fork it.
+
+## Why This Works (Structural Edge)
+
+Captures multi-day drift that the same-day exit discards, with a mechanical *let-winners-run /
+cut-losers* rule driven by **alpha** (validated) instead of raw P&L — so beta noise never mislabels
+a working catalyst on a red day. The score's job is *tradeability and context* (the dimensions
+Claude doesn't see), layered on top of Claude's already-tuned catalyst gate.
+
+## Next Steps
+
+Do **not** build the rotation engine first. Run the current bot well → accumulate clean, labeled
+trades → re-run the exit study as the sample grows → build & validate the v1 scorer → then design
+the rotation. Virtuous loop: the better the current bot runs, the better the data, the stronger
+this strategy will be when we reach it.
+
+## Portfolio Context
+
+In planning. The swing evolution of us_news_stock_bot; sibling to Strategy 6 (social rotation) and
+Strategy 7 (FX macro) in the news+Claude swing family. Gated on multi-day trade data to validate the
+`alpha`/`freshness` factors. Cost is *not* a concern (see turnover note); the only real gate is
+proving the score predicts outcomes.
