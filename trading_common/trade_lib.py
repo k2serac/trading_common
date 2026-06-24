@@ -1164,9 +1164,12 @@ class ClaudeSentiment:
     # Appended to every prompt so the response contract stays in one place
     _RESPONSE_FORMAT = (
         "\n\nRespond ONLY with a JSON object — no markdown, no extra text:\n"
-        '{"is_positive": true|false, "reason": "<one sentence>"}\n\n'
+        '{"is_positive": true|false, "confidence": <integer 1-10>, "reason": "<one sentence>"}\n\n'
         "Fields:\n"
         "  is_positive — true only if the event is clearly bullish\n"
+        "  confidence  — 1-10 conviction in this is_positive verdict (10 = a clear,\n"
+        "                material, fresh catalyst; 1 = borderline). Score it honestly\n"
+        "                even when is_positive is false.\n"
         "  reason      — plain-English justification of your yes/no decision"
     )
 
@@ -1559,16 +1562,22 @@ class ClaudeSentiment:
             result = self._assess_headline(title, body, strategy, symbol)
             is_positive: bool = result.get("is_positive", False)
             reason: str = result.get("reason", "")
+            confidence = result.get("confidence", 0)
 
             logger.info(
-                "Sentiment [%s][%s] is_positive=%s — %s",
-                symbol, strategy, is_positive, reason,
+                "Sentiment [%s][%s] is_positive=%s conf=%s — %s",
+                symbol, strategy, is_positive, confidence, reason,
             )
 
             if journal is not None:
                 journal.log_sentiment_decision(symbol, title, strategy, is_positive, reason)
 
-            all_decisions[symbol] = {**config, "is_positive": is_positive, "sentiment_reason": reason}
+            all_decisions[symbol] = {
+                **config,
+                "is_positive": is_positive,
+                "confidence": confidence,
+                "sentiment_reason": reason,
+            }
 
         return all_decisions
 

@@ -400,8 +400,14 @@ class TradingJournal:
         order_ref: str,
         limit_price: float | None = None,
         stop_price: float | None = None,
+        features: dict | None = None,
     ) -> None:
-        """Record an order successfully submitted to IBKR."""
+        """Record an order successfully submitted to IBKR.
+
+        ``features`` is an optional structured snapshot of the entry conditions
+        (strategy, sector, gap, regime, sentiment confidence, time-of-day) for
+        later ML/weekly-analysis use — purely additive, never affects trading.
+        """
         self._check_rollover()
         self._data["orders_placed"].append({
             "timestamp": datetime.now(MARKET_TZ).isoformat(),
@@ -412,6 +418,7 @@ class TradingJournal:
             "stop_price": stop_price,
             "strategy": strategy,
             "order_ref": order_ref,
+            "features": features or {},
         })
         self._save()
 
