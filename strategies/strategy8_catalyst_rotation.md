@@ -116,12 +116,14 @@ Strategy 8, not the current same-day bot.
     key's already in hand — → feed to **Claude** ("name the competitors + the specific niche") → cached
     fine-grained peer map (10-Ks are annual → cache per company/year). Reuses the bot's existing
     Claude-reads-text capability.
-  - **Final peer map = a 3-signal blend (all free), cross-validated:** (1) **pool** = Finnhub
-    `/stock/peers`; (2) **behavioral** = correlation / `sklearn` clustering on Polygon returns (who
-    *trades* together — SNPS↔CDNS +0.67); (3) **fundamental** = 10-K Item 1 + Claude (who the company
-    *says* it competes with — EDA-level). Agreement across signals = high-confidence peer (10-K *names*
-    SNPS; correlation *confirms* +0.67). Then weight the read-through by correlation; filter to live
-    tickers (Polygon `active`).
+  - **Final peer map = a SEQUENCE (all free): 10-K *selects*, correlation *weights*, Finnhub *backstops*.**
+    (1) **10-K Item 1 + Claude = SELECT** the named competitors (precise, EDA-level — tighter than any
+    pool); (2) **filter to live tradeable US tickers** (Polygon `active` — e.g. CDNS's named
+    `[SNPS, Ansys, Siemens EDA]` → only **SNPS** survives: Ansys acquired, Siemens EDA private);
+    (3) **correlation = WEIGHT** each survivor's read-through (SNPS +0.67) and sanity-drop any named
+    "peer" that doesn't co-move; (4) **Finnhub `/stock/peers` = FALLBACK** only, when a 10-K is
+    vague/missing. (`sklearn` clustering on returns is the universe-wide behavioral version of step 3.)
+    The key role-flip: once the 10-K names peers, correlation stops *selecting* and starts *weighting*.
 
 ## Score Methodology & Weighting (let the data assign the weights)
 
