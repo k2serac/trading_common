@@ -106,6 +106,22 @@ Strategy 8, not the current same-day bot.
     SIC 7372 "Prepackaged Software" (1930s gov system, coarser than GICS, not EDA-granular). So:
     Finnhub = pool + earnings dates, Polygon = prices + live filter + metadata, **correlation = the
     discriminator.**
+  - **Fine-grained peers, FREE — the breakthrough (2026-06-25): 10-K *Item 1* (Business).** A company
+    *names its own competitors* in its annual filing. VERIFIED: Cadence's 10-K Item 1 reads *"Key
+    competitors include Synopsys, Inc., Ansys, Inc. (acquired by Synopsys), Siemens EDA..."* — i.e.
+    **EDA-level granularity no taxonomy has**, straight from the source (and it self-IDs the
+    consolidation: Ansys→Synopsys, Siemens EDA = ex-Mentor). Pipeline: pull Item 1 from **EDGAR (free)**
+    — direct `requests`+parse (the competitor text is a ~5-line grab), or `edgartools` (free,
+    open-source); **`sec_api`/sec-api.io is a *paid* wrapper over the same free data — skip it** unless a
+    key's already in hand — → feed to **Claude** ("name the competitors + the specific niche") → cached
+    fine-grained peer map (10-Ks are annual → cache per company/year). Reuses the bot's existing
+    Claude-reads-text capability.
+  - **Final peer map = a 3-signal blend (all free), cross-validated:** (1) **pool** = Finnhub
+    `/stock/peers`; (2) **behavioral** = correlation / `sklearn` clustering on Polygon returns (who
+    *trades* together — SNPS↔CDNS +0.67); (3) **fundamental** = 10-K Item 1 + Claude (who the company
+    *says* it competes with — EDA-level). Agreement across signals = high-confidence peer (10-K *names*
+    SNPS; correlation *confirms* +0.67). Then weight the read-through by correlation; filter to live
+    tickers (Polygon `active`).
 
 ## Score Methodology & Weighting (let the data assign the weights)
 
