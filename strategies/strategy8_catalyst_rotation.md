@@ -91,6 +91,12 @@ Strategy 8, not the current same-day bot.
     the broad software basket above); Wikipedia GICS (S&P-500 only → misses small caps); FinanceDatabase
     (free/broad but coarsest level is "Software"). **Validate the factor via `factor_report` before
     adding it** — log it as a feature and let the coefficient decide.
+  - **Detailed classification = a non-purchase (don't revisit).** The fine `gsubind`/`naics` fields are
+    real but **premium-only** (Finnhub `/stock/profile`; BICS is Bloomberg; official GICS is licensed) —
+    free `profile2` gives only `finnhubIndustry:"Technology"`. And even *paid*, it bottoms out at
+    "Systems/Application Software" / NAICS 541511 — **still not EDA-granular** (lumps in MSFT/ADBE/etc.).
+    So it would buy nothing the **free correlation gate already does better** (CDNS +0.67 vs +0.15–0.32).
+    Don't pay for it.
 
 ## Score Methodology & Weighting (let the data assign the weights)
 
