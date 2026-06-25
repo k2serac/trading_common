@@ -74,19 +74,23 @@ Strategy 8, not the current same-day bot.
     our stock is *also* flat-or-up, i.e. the rising-tide case. So the floor fixes the **sign**; the
     regression only needs to calibrate the **magnitude** (strong booster vs. noise). Multi-day
     competitive risk (rising tide day 1, fades day 3) is caught by the *Exit Stack*, not the floor.
-  - **Peer map = Finnhub `/stock/peers`** (decided 2026-06-24) — curated per-symbol competitor lists,
-    EDA-level precision, free tier, covers small caps. Cached and refreshed periodically (peers are
-    stable); no network in the hot path. **Market-residual return correlation is applied ONLY within
-    the classification-matched peer set** (the user's refinement) — a peer must *both* match the
-    classification (be in the Finnhub peer list) *and* co-move tightly. Classification supplies the
-    candidate pool + kills spurious correlations; correlation tightens it to real co-movers (SNPS↔CDNS
-    +0.67 within "Software"). The looser **cross-industry read-through (NVDA→SNPS) is dropped** — the
-    data showed it weak (+0.24 vs +0.67 for the direct pair), so the factor targets same-classification
-    direct competitors only. Rejected after live testing: **OpenFIGI** (symbology only — returns
-    `marketSector:"Equity"`, no industry data); **GICS via Wikipedia** (S&P-500 only → misses small
-    caps); **FinanceDatabase** (free/broad metadata but only 3 levels — coarsest is "Software", can't
-    isolate EDA). Plus earnings calendar + peer reactions. **Validate via `factor_report` before adding
-    it** — log it as a feature and let the coefficient decide.
+  - **Peer pool = Finnhub `/stock/peers`** (per-symbol, free, covers small caps), then
+    **correlation-weighted**. LIVE-VERIFIED 2026-06-24 (real API key): Finnhub peers is
+    **sector/size-coherent but NOT EDA-tight** — CDNS/SNPS both return a broad large-cap-software basket
+    (`PLTR, APP, CRM, CDNS, SNPS, DDOG, ADBE, INTU, ADSK, ROP, MSTR`), *not* a clean EDA list. So the
+    pool is broad; the **real discriminator is market-residual return correlation WITHIN the pool**:
+    SNPS↔CDNS = **+0.67** (the lone true co-mover) vs **+0.15–0.32** for every loose sector name — a
+    clean gap. **Best form: weight each peer's earnings read-through by its correlation to the held
+    name** (CDNS earnings → strong read-through to SNPS; CRM → negligible) — one continuous weight that
+    fuses "is a peer" + "actually co-moves." Filter to **live tickers** (acquisitions delist peers —
+    ANSS→Synopsys, MENT→Siemens). Cache the map; no network in the hot path.
+  - **Rejected after LIVE testing — note all three pasted "API samples" turned out fabricated, caught
+    only by querying the real endpoints:** OpenFIGI (symbology only — `marketSector:"Equity"`, no
+    industry); Finnhub `profile2` `gsubind`/`naics` (don't exist — real `profile2` returns just
+    `finnhubIndustry:"Technology"`); the clean `["CDNS","SNPS","ANSS","MENT"]` peer list (real one is
+    the broad software basket above); Wikipedia GICS (S&P-500 only → misses small caps); FinanceDatabase
+    (free/broad but coarsest level is "Software"). **Validate the factor via `factor_report` before
+    adding it** — log it as a feature and let the coefficient decide.
 
 ## Score Methodology & Weighting (let the data assign the weights)
 
