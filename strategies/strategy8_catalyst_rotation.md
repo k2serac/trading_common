@@ -74,8 +74,19 @@ Strategy 8, not the current same-day bot.
     our stock is *also* flat-or-up, i.e. the rising-tide case. So the floor fixes the **sign**; the
     regression only needs to calibrate the **magnitude** (strong booster vs. noise). Multi-day
     competitive risk (rising tide day 1, fades day 3) is caught by the *Exit Stack*, not the floor.
-  - **Cost:** needs a peer / sub-industry map + earnings calendar + peer reactions. Validate via
-    `factor_report` before adding it — log it as a feature and let the coefficient decide.
+  - **Peer map = Finnhub `/stock/peers`** (decided 2026-06-24) — curated per-symbol competitor lists,
+    EDA-level precision, free tier, covers small caps. Cached and refreshed periodically (peers are
+    stable); no network in the hot path. **Market-residual return correlation is applied ONLY within
+    the classification-matched peer set** (the user's refinement) — a peer must *both* match the
+    classification (be in the Finnhub peer list) *and* co-move tightly. Classification supplies the
+    candidate pool + kills spurious correlations; correlation tightens it to real co-movers (SNPS↔CDNS
+    +0.67 within "Software"). The looser **cross-industry read-through (NVDA→SNPS) is dropped** — the
+    data showed it weak (+0.24 vs +0.67 for the direct pair), so the factor targets same-classification
+    direct competitors only. Rejected after live testing: **OpenFIGI** (symbology only — returns
+    `marketSector:"Equity"`, no industry data); **GICS via Wikipedia** (S&P-500 only → misses small
+    caps); **FinanceDatabase** (free/broad metadata but only 3 levels — coarsest is "Software", can't
+    isolate EDA). Plus earnings calendar + peer reactions. **Validate via `factor_report` before adding
+    it** — log it as a feature and let the coefficient decide.
 
 ## Score Methodology & Weighting (let the data assign the weights)
 
