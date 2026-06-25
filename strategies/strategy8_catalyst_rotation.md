@@ -26,8 +26,9 @@ score = catalyst_component (decays over the news drift window)
 - **A new catalyst resets the clock → "catalyst stacking."** A second initiation from another broker
   re-freshens the score and compounds conviction → keep the name.
 - **No fresh catalyst + decayed + price stalling/falling → score drops below threshold → sell.**
-- **The score *is* the sell rule** — no separate exit logic. A name leaves the book when its score
-  falls below the cut or below a fresher candidate.
+- **The score is the *rotation* sell rule** — a name leaves the book when its score falls below the
+  cut or below a fresher candidate. Layered on top are **fast risk exits** (bad news, MA break, hard
+  stop — see *Exit Stack*) for sharp failures the once-daily rescore is too slow to catch.
 
 ## The Conviction Score — Final Factor Set
 
@@ -60,6 +61,22 @@ selection, so a conviction score adds little at entry — its value is the multi
 decision (where `alpha` + `freshness` carry the variance). That's why the score belongs to
 Strategy 8, not the current same-day bot.
 
+### Candidate factors (to validate — not yet in the set)
+
+- **`peer_earnings_reaction`** — a same-day strong earnings reaction from an **industry peer** (same
+  GICS sub-industry) as an industry-level read-through tailwind (*"NVDA blows out → the whole semi
+  complex bids → SNPS rides it"*; **intra-industry earnings information transfer**, a documented
+  effect). It's an *event* signal (sharp, dated) — distinct from the slow `sector_trend` — and decays
+  like `freshness` but at the **industry** level. Proxy = the peer's **earnings-day price reaction**
+  (the market reaction already encodes materiality), not the raw beat/miss.
+  - **The sign risk is handled for free by the MinVar=0 entry floor.** The competitive case (a peer
+    beats by *taking* our company's share → our stock trades red) self-filters — we only enter when
+    our stock is *also* flat-or-up, i.e. the rising-tide case. So the floor fixes the **sign**; the
+    regression only needs to calibrate the **magnitude** (strong booster vs. noise). Multi-day
+    competitive risk (rising tide day 1, fades day 3) is caught by the *Exit Stack*, not the floor.
+  - **Cost:** needs a peer / sub-industry map + earnings calendar + peer reactions. Validate via
+    `factor_report` before adding it — log it as a feature and let the coefficient decide.
+
 ## Score Methodology & Weighting (let the data assign the weights)
 
 Normalize each factor to 0–100 (percentile / z-score), direction-align, weighted sum → 1–100. Use
@@ -90,6 +107,23 @@ and rotates only 1–2/day, so each round-trip captures the full 3–5 day drift
 **cost per unit of move captured**, where multi-day holds win — and spread/slippage (bigger than
 commission on a small account) favors it for the same reason. Hysteresis is for avoiding churn, not
 because turnover is inherently high.
+
+## Exit Stack (protecting the hold)
+
+The MinVar=0 floor only protects the *entry*; a multi-day hold needs exits that protect the *hold*.
+The score handles **slow** decay (the rotation rule above); layered on top are **fast** risk exits
+for sharp failures the once-daily rescore can't react to in time. OR-logic — any trigger sells:
+
+| Trigger | Catches | Type | Note |
+|---|---|---|---|
+| **Material negative news** | catalyst thesis reversed | fundamental | reuse `_handle_sentiment_reversal`; **gate on high `confidence`** so a held name's constant news flow doesn't whipsaw it out on a minor negative |
+| **Daily *close* below the MA** | trend/momentum broke | technical | 10/20-day MA — **not** intraday VWAP (VWAP resets daily → that's the intraday bot's tool). Symmetric with `ma_trend` entry (enter above → exit below). Close-based to avoid intraday-wick whipsaw |
+| **Score decay below cut** | catalyst went stale | time | the rotation rule (above) |
+| **Hard ATR / % stop** | gap / crash | tail | catastrophe floor |
+
+Continuous news monitoring covers **every** held name — cross-reference incoming news against the
+`OpenTradeRegistry` holdings and run it through the existing us_news sentiment pipeline. Not a new
+build; the entry machinery already watches and reverses on negative sentiment.
 
 ## The Pipeline This Completes
 
