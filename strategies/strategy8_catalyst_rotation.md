@@ -97,6 +97,15 @@ Strategy 8, not the current same-day bot.
     "Systems/Application Software" / NAICS 541511 — **still not EDA-granular** (lumps in MSFT/ADBE/etc.).
     So it would buy nothing the **free correlation gate already does better** (CDNS +0.67 vs +0.15–0.32).
     Don't pay for it.
+  - **Data backbone (already paid + already integrated in `trade_lib.py`):** **Polygon** for
+    **prices/aggregates** (the correlation compute — reliable, no rate limits vs yfinance), the
+    **`active` flag** (clean live-ticker filter — VERIFIED: acquired ANSS returns `active=None` /
+    no result), and **`market_cap`/metadata** (replaces FinanceDatabase). **Finnhub** for the **peer
+    pool** (`/stock/peers`) + **earnings calendar** (`/calendar/earnings` — "who reported today").
+    Polygon's **SIC classification** was checked + rejected for grouping: SNPS/CDNS/MSFT/ADBE are *all*
+    SIC 7372 "Prepackaged Software" (1930s gov system, coarser than GICS, not EDA-granular). So:
+    Finnhub = pool + earnings dates, Polygon = prices + live filter + metadata, **correlation = the
+    discriminator.**
 
 ## Score Methodology & Weighting (let the data assign the weights)
 
