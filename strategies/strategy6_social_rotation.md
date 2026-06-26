@@ -1,5 +1,15 @@
 # Strategy 6 — Social Sentiment + Sector Rotation
 
+> **STATUS: PARKED as a standalone strategy (2026-06-25).** Deprioritized behind #8 (cooking on a
+> proven base) and #7 (FX macro). Reasons: (1) it runs the proven Claude-synthesis engine on its
+> **weakest fuel** — social sentiment is noisy, crowded/arbitraged, and faded post-2021; (2) an
+> **internal mismatch** — the social/retail signal is *fast & single-stock*, but the vehicle
+> (sector-ETF rotation) is *slow & macro*, so they don't fit; (3) lowest-confidence of the three theses.
+> **Salvage (do NOT delete the idea):** repurpose social chatter/momentum as a **secondary FACTOR in
+> Strategy 8's conviction score** — *"does this catalyst have social tailwind?"* — confirming a real
+> catalyst rather than generating signals on its own (same move as the Periscope/GEX salvage). Revisit
+> the standalone only with a *specific* social-signal insight that beats the crowded version.
+
 ## Thesis
 
 Identify early sector rotation themes before retail fully prices them in. Not chasing hype —

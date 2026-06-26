@@ -15,11 +15,13 @@ rejected. (The day-to-day working notes live in Claude memory; these are the dur
 
 ## Planned (in research/design)
 
+Priority order: **#8 first** (cooking now on a proven base — data accruing), **#7 next** (FX macro).
+
 | # | Strategy | One-line |
 |---|---|---|
-| 6 | [Social Rotation](strategy6_social_rotation.md) | Reddit + Benzinga + Opus → sector-rotation ETF swing. |
+| 8 | [Catalyst Rotation](strategy8_catalyst_rotation.md) | Multi-day catalyst-momentum portfolio w/ a freshness-decaying conviction score. The swing evolution of #5. **Phase 1 (data accrual) live.** |
 | 7 | [FX Macro Swing](strategy7_fx_macro.md) | Majors trend skeleton + Claude central-bank overlay (OANDA). Carry rejected. |
-| 8 | [Catalyst Rotation](strategy8_catalyst_rotation.md) | Multi-day catalyst-momentum portfolio w/ a freshness-decaying conviction score. The swing evolution of #5. |
+| 6 | [Social Rotation](strategy6_social_rotation.md) | Reddit + Benzinga + Opus → sector-rotation ETF swing. **PARKED 2026-06-25** — weakest fuel (social), signal/vehicle mismatch; salvage as a *social-tailwind factor in #8*, not a standalone bot. |
 
 ## Retired / rejected
 
