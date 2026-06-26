@@ -5,10 +5,17 @@
 > **weakest fuel** — social sentiment is noisy, crowded/arbitraged, and faded post-2021; (2) an
 > **internal mismatch** — the social/retail signal is *fast & single-stock*, but the vehicle
 > (sector-ETF rotation) is *slow & macro*, so they don't fit; (3) lowest-confidence of the three theses.
-> **Salvage (do NOT delete the idea):** repurpose social chatter/momentum as a **secondary FACTOR in
-> Strategy 8's conviction score** — *"does this catalyst have social tailwind?"* — confirming a real
-> catalyst rather than generating signals on its own (same move as the Periscope/GEX salvage). Revisit
-> the standalone only with a *specific* social-signal insight that beats the crowded version.
+> **WSB / social sentiment: DROPPED ENTIRELY (2026-06-25) — not even as a #8 factor.** Decided on
+> **explainability** grounds: every trade in this stack must carry a human-auditable reason (the Claude
+> `sentiment_reason` trail; interpretable factors; the weekly prompt-critique loop). A signal whose
+> explanation is *"N users hyped it"* is a black box that can't be trusted, sized, debugged, or learned
+> from — and it fails silently. It would be the one un-auditable input in an otherwise explainable
+> system. (Edge and explainability point the same way here — social is *both* weak and opaque.)
+> See [[trade-explainability-principle]].
+>
+> **If sector rotation is ever revisited**, the *auditable* alternative is **fundamental text via Claude**
+> (CapEx / 10-K / earnings-transcript keyword velocity — evidence-backed, not crowd-backed), validated
+> for orthogonal IC first. Not WSB.
 
 ## Thesis
 
