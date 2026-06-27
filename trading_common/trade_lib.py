@@ -1622,6 +1622,59 @@ def _ibkr_reconnect(ib: IB, host: str, port: int, client_id: int) -> None:
 
 
 # ---------------------------------------------------------------------------
+# IBKR port resolution (IB Gateway vs TWS)
+# ---------------------------------------------------------------------------
+
+# Standard Interactive Brokers API ports. IB Gateway is the lighter-weight,
+# headless counterpart to TWS and is the default connection platform.
+IBKR_PORTS: dict[tuple[str, str], int] = {
+    ("gateway", "live"): 4001,
+    ("gateway", "demo"): 4002,
+    ("tws", "live"):     7496,
+    ("tws", "demo"):     7497,
+}
+
+# Ports backing a paper/demo account, where live market data is not entitled
+# and delayed data (market-data type 3) must be requested instead.
+_PAPER_PORTS: frozenset[int] = frozenset({7497, 4002})
+
+# Accepted spellings for each axis, normalised to the keys used above.
+_PLATFORM_ALIASES = {"gateway": "gateway", "ibgateway": "gateway", "gw": "gateway", "tws": "tws"}
+_MODE_ALIASES = {"demo": "demo", "paper": "demo", "live": "live", "real": "live"}
+
+
+def resolve_ibkr_port(
+    mode: str = "demo",
+    platform: str = "gateway",
+    explicit: int | None = None,
+) -> int:
+    """Resolve the IBKR API port from the connection platform and trading mode.
+
+    IB Gateway (4001 live / 4002 paper) is the default platform; pass
+    ``platform="tws"`` for TWS (7496 live / 7497 paper). An ``explicit`` port,
+    when given, overrides the lookup entirely — for non-standard setups.
+
+    Args:
+        mode:     "demo"/"paper" or "live"/"real".
+        platform: "gateway" (default) or "tws".
+        explicit: optional hard-coded port that bypasses derivation.
+
+    Raises:
+        ValueError: if ``platform`` or ``mode`` is unrecognised.
+    """
+    if explicit is not None:
+        return explicit
+    plat = _PLATFORM_ALIASES.get(str(platform).strip().lower())
+    md = _MODE_ALIASES.get(str(mode).strip().lower())
+    if plat is None or md is None:
+        raise ValueError(
+            f"Cannot resolve IBKR port for platform={platform!r}, mode={mode!r}. "
+            "Expected platform in {gateway, tws} and mode in {demo, live}."
+        )
+    return IBKR_PORTS[(plat, md)]
+
+
+# ---------------------------------------------------------------------------
 # IBapi
 # ---------------------------------------------------------------------------
 
@@ -1634,18 +1687,27 @@ class IBapi:
     Args:
         client_id: IB API client identifier (must be unique per connection).
         host:      TWS / IB Gateway host address.
-        port:      TWS / IB Gateway port (7496 = live, 7497 = paper).
+        port:      explicit API port; when ``None`` (default) the port is
+                   derived from ``platform`` + ``mode`` via resolve_ibkr_port().
+        platform:  "gateway" (default, ports 4001/4002) or "tws" (7496/7497).
+        mode:      "demo"/"paper" or "live"/"real" (selects paper vs live port).
     """
 
     def __init__(
         self,
         client_id: int = 0,
         host: str = "127.0.0.1",
-        port: int = 7496,
+        port: int | None = None,
+        *,
+        platform: str = "gateway",
+        mode: str = "demo",
     ) -> None:
         self.client_id = client_id
         self.host = host
-        self.port = port
+        self.platform = str(platform).strip().lower()
+        self.mode = str(mode).strip().lower()
+        # IB Gateway by default; an explicit ``port`` overrides the derivation.
+        self.port = resolve_ibkr_port(self.mode, self.platform, explicit=port)
         self.ib = IB()
 
     def connect(self) -> None:
@@ -1657,9 +1719,12 @@ class IBapi:
                     "Connected to IB API at %s:%d (clientId=%d).",
                     self.host, self.port, self.client_id,
                 )
-                if self.port == 7497:
+                if self.port in _PAPER_PORTS:
                     self.ib.reqMarketDataType(3)
-                    logger.info("Paper trading account — using delayed market data (type 3).")
+                    logger.info(
+                        "Paper account (port %d) — using delayed market data (type 3).",
+                        self.port,
+                    )
                 return
             except Exception as exc:
                 logger.error("IB connection error: %s — retrying in 10 s.", exc)
