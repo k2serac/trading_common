@@ -33,7 +33,7 @@ import pytz
 import websocket
 
 import anthropic
-from ib_async import IB, LimitOrder, MarketOrder, Stock, StopLimitOrder, StopOrder
+from ib_async import IB, Index, LimitOrder, MarketOrder, Stock, StopLimitOrder, StopOrder
 from openbb import obb
 
 # ---------------------------------------------------------------------------
@@ -1891,6 +1891,30 @@ class IBapi:
             return bars if bars else None
         except Exception as exc:
             logger.error("Error fetching daily bars for %s: %s", symbol, exc)
+            return None
+
+    def getVixLevel(self) -> float | None:
+        """Return the latest VIX (CBOE volatility index) close, or None on error.
+
+        VIX is an Index, not a Stock, so it needs its own contract. Used by the
+        market-regime gate; callers should treat None as 'unavailable' and fall
+        back to price-based signals rather than failing.
+        """
+        try:
+            contract = Index("VIX", "CBOE", "USD")
+            self.ib.qualifyContracts(contract)
+            bars = self.ib.reqHistoricalData(
+                contract,
+                endDateTime="",
+                durationStr="2 D",
+                barSizeSetting="1 day",
+                whatToShow="TRADES",
+                useRTH=True,
+                formatDate=1,
+            )
+            return bars[-1].close if bars else None
+        except Exception as exc:
+            logger.error("Error fetching VIX level: %s", exc)
             return None
 
     def cancelOrder(self, order) -> None:
