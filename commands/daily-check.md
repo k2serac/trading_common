@@ -13,6 +13,7 @@ Then per bot, only surface what matters:
 **1. us_news_stock_bot** — `/home/nicu/work/repos/us_news_stock_bot`
 - `journal/daytrader/<today>.json`: `orders_placed` (symbol, strategy, key `features` incl. confidence + gap), `positions_closed` (P&L vs the **fill** price, not the limit), and a **deduped** view of `trades_skipped` (group by reason; flag any single symbol/reason that repeats heavily — a re-skip flood).
 - Note positive-sentiment candidates that did NOT convert, and why.
+- **Market-regime gate:** grep the session log for the latest `Market regime:` line — report today's regime (NORMAL / CAUTIOUS / RISK_OFF) and any regime-gated skips (`standing down` / `CAUTIOUS … only conf>=`). **VIX-fetch health check:** the regime detail should show `VIX <n>`; if it shows only `SPY …`, `data-error`, or there's a "Error fetching VIX level" in the log, the VIX Index-contract fetch is broken — **flag it** (the gate still works on SPY alone, but VIX is degraded).
 
 **2. soxl_index_bot** — `/home/nicu/work/repos/soxl_index_bot`
 - `state/{core,satellite,pmgap}_state.json`: open positions.
