@@ -26,5 +26,13 @@ Then per bot, only surface what matters:
 connection errors / stalled bot (check log freshness) · stops fired / whipsaw · positions underwater ·
 mega-cap catalysts that didn't react · fill-vs-limit gaps.
 
+**Weak-trade post-mortem (the learning loop):** for every **losing or near-flat** closed trade — and
+any same-day **fade** (popped, then gave it back) — do a quick post-mortem: *why* did it underperform?
+Candidates: mega-cap non-reaction · anticipated / priced-in · label-expansion vs new approval ·
+"sell the news" · late or bad entry · wrong catalyst type · whipsaw. Then suggest **one concrete
+improvement** (a prompt tweak, a new filter/guard, a threshold) as a **review note for future
+iteration**, and flag any pattern that recurs across days. Winners need no post-mortem — focus the
+effort on what didn't work. This is *review*, not action.
+
 If something needs a fix, say so and propose it — but **do not change live trading code, configs, prompts,
 or state files without my explicit OK.** Detection is yours; remediation is mine to approve.
