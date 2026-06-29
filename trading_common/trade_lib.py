@@ -15,6 +15,7 @@ Provides six main components:
 from __future__ import annotations
 
 import hashlib
+import html
 import json
 import logging
 import math
@@ -435,10 +436,12 @@ class Obb:
         matched: dict = {}
 
         for _, row in self.news_data.iterrows():
-            title: str = row["title"]
+            # HTML-decode so entity variants (e.g. &#39; vs ') don't defeat the
+            # dedup checksum or the regex match (would double-process / double-order).
+            title: str = html.unescape(row["title"])
             updated = row["updated"]
             symbols: str = row["symbols"]
-            body: str = row.get("body", "") or ""  # full article text; may be absent
+            body: str = html.unescape(row.get("body", "") or "")  # full article text; may be absent
 
             # Dedup: skip headlines we have already acted on.
             # Key on title+symbols (not title+updated) because Benzinga refreshes
@@ -891,10 +894,12 @@ class Massive:
         matched: dict = {}
 
         for _, row in self.news_data.iterrows():
-            title: str = row["title"]
+            # HTML-decode so entity variants (e.g. &#39; vs ') don't defeat the
+            # dedup checksum or the regex match (would double-process / double-order).
+            title: str = html.unescape(row["title"])
             updated = row["updated"]
             symbols: str = row["symbols"]
-            body: str = row.get("body", "") or ""
+            body: str = html.unescape(row.get("body", "") or "")
 
             checksum = hashlib.md5(f"{title}_{symbols}".encode()).hexdigest()
             if checksum in self._checksum_cache:
