@@ -186,6 +186,12 @@ class TradingJournal:
             hashlib.md5(f"{e['title']}{e['strategy']}{e['symbol']}".encode()).hexdigest()
             for e in self._data.get("sentiment_decisions", [])
         }
+        # Per-session skip dedup — the live loop re-evaluates pending symbols every
+        # poll and would otherwise re-log the same (symbol, reason) hundreds of times
+        # per session (e.g. liquidity / conflicting-signal skips). Log each once.
+        self._skipped_seen: set[str] = {
+            f"{e.get('symbol')}|{e.get('reason')}" for e in self._data.get("trades_skipped", [])
+        }
         logger.info("Trading journal opened: %s", self._path)
 
     # ------------------------------------------------------------------
@@ -258,6 +264,10 @@ class TradingJournal:
             self._session_date = session_date
             self._path = os.path.join(self.journal_dir, f"{self._session_date}.json")
             self._data = self._load_or_create()
+            # Reset per-session skip dedup for the new journal file
+            self._skipped_seen = {
+                f"{e.get('symbol')}|{e.get('reason')}" for e in self._data.get("trades_skipped", [])
+            }
             # Carry the running session forward so the new journal knows the bot
             # was already running when this session started (multi-day runs)
             if had_open_session:
@@ -460,6 +470,11 @@ class TradingJournal:
             current_count: Counter value at the time of the skip.
         """
         self._check_rollover()
+        # Dedup: log each (symbol, reason) only once per session file.
+        key = f"{symbol}|{reason}"
+        if key in self._skipped_seen:
+            return
+        self._skipped_seen.add(key)
         self._data.setdefault("trades_skipped", []).append({
             "timestamp": datetime.now(MARKET_TZ).isoformat(),
             "symbol": symbol,
