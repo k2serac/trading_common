@@ -34,7 +34,7 @@ import pytz
 import websocket
 
 import anthropic
-from ib_async import IB, Index, LimitOrder, MarketOrder, Stock, StopLimitOrder, StopOrder
+from ib_async import ContFuture, IB, Index, LimitOrder, MarketOrder, Stock, StopLimitOrder, StopOrder
 from openbb import obb
 
 # ---------------------------------------------------------------------------
@@ -1991,6 +1991,40 @@ class IBapi:
             return bars[-1].close if bars else None
         except Exception as exc:
             logger.error("Error fetching VIX level: %s", exc)
+            return None
+
+    def getFuturesQuote(
+        self, symbol: str, exchange: str = "CME", currency: str = "USD"
+    ) -> tuple[float, float] | None:
+        """Return ``(last_price, prior_settle)`` for the front-month continuous
+        future, or ``None`` on any error / missing data.
+
+        Used by the market-regime gate for a LIVE ~24h index read: index ETFs
+        (SPY/IWM) barely trade pre-market, so their snapshot reads back the prior
+        close (stale), exactly when the bot commits most entries. ES / RTY futures
+        trade overnight, so they give a real read at that hour. ``ContFuture``
+        auto-resolves the active front month (no manual rolling); the snapshot's
+        ``close`` field is the prior settlement, so one request yields the day's
+        move. Callers treat ``None`` as 'unavailable' and fall back to the ETF.
+        """
+        try:
+            contract = ContFuture(symbol, exchange, currency)
+            qualified = self.ib.qualifyContracts(contract)
+            if not qualified:
+                return None
+            ticker = self.ib.reqMktData(qualified[0], "", True, False)
+            self.ib.sleep(2.0)  # let the snapshot populate
+            price = ticker.marketPrice()
+            settle = ticker.close
+            self.ib.cancelMktData(qualified[0])
+            if (
+                price and not math.isnan(price) and price > 0
+                and settle and not math.isnan(settle) and settle > 0
+            ):
+                return float(price), float(settle)
+            return None
+        except Exception as exc:
+            logger.debug("Error fetching futures quote for %s: %s", symbol, exc)
             return None
 
     def cancelOrder(self, order) -> None:
