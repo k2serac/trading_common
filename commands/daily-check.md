@@ -11,10 +11,18 @@ Be concise and lead with a one-line bottom line:
 Then per bot, only surface what matters:
 
 **1. us_news_stock_bot** — `/home/nicu/work/repos/us_news_stock_bot`
+- **Realized P&L — use the reconciler, NOT the journal, as the source of truth.** Run
+  `python3 research/reconcile_pnl.py` (optionally `--since <date>`). It rebuilds true daily realized $
+  from IBKR's broker `realizedPNL` in the session logs — including stop-bracket exits and closes that
+  fired during a disconnect, which the journal can miss. Report the day's realized $, win/loss count,
+  and the **GAP** column (round-trips the journal's `positions_closed` never recorded). Any non-zero GAP
+  or a `NO exec event for the close` flag is itself an anomaly to surface (journal vs broker divergence,
+  or a disconnect-period fill). The journal's `strategy_pnl` is `pnl_pct`-only and historically
+  under-counts losers — treat it as secondary.
 - `journal/daytrader/<today>.json`: `orders_placed` (symbol, strategy, key `features` incl. confidence + gap), `positions_closed` (P&L vs the **fill** price, not the limit), and a **deduped** view of `trades_skipped` (group by reason; flag any single symbol/reason that repeats heavily — a re-skip flood).
 - Note positive-sentiment candidates that did NOT convert, and why.
 - **Over-filtering watch (esp. while bedding in Opus 4.8):** compare today's **order count + positive-sentiment rate + the `confidence` distribution** against the recent ~2-week baseline. If trades are notably **fewer**, attribute it: (a) **Opus 4.8 stricter** — lower positive-sentiment rate or lower confidence scores (it may over-filter on materiality/mega-cap); (b) the **regime gate** (CAUTIOUS/RISK-OFF skips); (c) the **mega-cap/materiality guards**; or (d) just a **quiet news day** (few matched). If 4.8 looks like it's over-filtering — or its confidence scores have shifted (which also affects the `conf ≥ 8` regime bar *and* the ML labels) — **suggest a tuning** (loosen a specific prompt, or revisit `regime_min_confidence`). Review, not action.
-- **Market-regime gate:** grep the session log for the latest `Market regime:` line — report today's regime (NORMAL / CAUTIOUS / RISK_OFF) and any regime-gated skips (`standing down` / `CAUTIOUS … only conf>=`). **VIX-fetch health check:** the regime detail should show `VIX <n>`; if it shows only `SPY …`, `data-error`, or there's a "Error fetching VIX level" in the log, the VIX Index-contract fetch is broken — **flag it** (the gate still works on SPY alone, but VIX is degraded).
+- **Market-regime gate:** grep the session log for the latest `Market regime:` line — report today's regime (NORMAL / CAUTIOUS / RISK_OFF) and any regime-gated skips (`standing down` / `CAUTIOUS … only conf>=`). Note the line only logs when the regime is **non-NORMAL**; absence of the line = NORMAL all day. The detail string should read `SPY … VIX … IWM …`. **Data-health check:** if `VIX` is missing (only `SPY`/`IWM` shown), or there's an "Error fetching VIX level", the VIX fetch is broken; if `IWM` is missing, the small-cap **breadth** signal is degraded; `data-error` means the whole check fell back to NORMAL. The gate still works on whatever signals remain, but **flag** any missing one.
 
 **2. soxl_index_bot** — `/home/nicu/work/repos/soxl_index_bot`
 - `state/{core,satellite,pmgap}_state.json`: open positions.

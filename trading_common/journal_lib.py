@@ -107,8 +107,15 @@ class OpenTradeRegistry:
         symbol: str,
         sell_price: float | None = None,
         fill_price: float | None = None,
-    ) -> None:
-        """Mark the most recent open entry for symbol as closed."""
+    ) -> bool:
+        """Mark the most recent open entry for symbol as closed.
+
+        Returns ``True`` if an open entry was found and flipped to closed, or
+        ``False`` if there was nothing open to close (already closed). Callers
+        use the return value to journal a close exactly once even when the
+        closing order fills in several partial executions — only the execution
+        that actually flips the position closed returns ``True``.
+        """
         for entry in reversed(self._entries):
             if entry["symbol"] == symbol and entry["status"] in ("pending", "filled"):
                 entry["status"] = "closed"
@@ -119,7 +126,8 @@ class OpenTradeRegistry:
                 self._save()
                 logger.info("Registry: marked %s as closed (fill=%.4f sell=%.4f)",
                             symbol, fill_price or 0, sell_price or 0)
-                return
+                return True
+        return False
 
     def mark_filled(
         self,

@@ -1714,6 +1714,12 @@ class IBapi:
         # IB Gateway by default; an explicit ``port`` overrides the derivation.
         self.port = resolve_ibkr_port(self.mode, self.platform, explicit=port)
         self.ib = IB()
+        # Set False on IBKR error 1100 (TWS↔IBKR-server connectivity lost) and
+        # back True on 1101/1102 (restored). isConnected()/the reqCurrentTime
+        # heartbeat can't see a 1100 — the local client↔Gateway socket stays up —
+        # so callers gate new orders on this flag to avoid trading blind during a
+        # server-side outage. Driven by a host-registered errorEvent handler.
+        self.connectivity_ok = True
 
     def connect(self) -> None:
         """Connect to TWS / IB Gateway, retrying every 10 s on failure."""
