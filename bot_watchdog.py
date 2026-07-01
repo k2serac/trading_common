@@ -42,8 +42,9 @@ BOTS = {
     "us_news_stock_bot":      {"script": "daytrader.py"},
     "soxl_index_bot":         {"script": "soxl_trader.py"},
     "commodity_breakout_bot": {"script": "commodity_trader.py"},
-    "fx_macro_bot":           {"script": "fx_macro_trader.py",
-                               "state": REPOS / "fx_macro_bot/journal/fx_state.json"},
+    # fx_macro_bot repo now runs the event-drift bot (COT trader retired as fallback)
+    "fx_macro_bot":           {"script": "event_drift_trader.py",
+                               "state": REPOS / "fx_macro_bot/journal/event_drift_state.json"},
 }
 _ONESHOT = ("--audit", "--dry-run", "--once")
 
