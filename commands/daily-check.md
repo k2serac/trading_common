@@ -56,8 +56,10 @@ Then per bot, only surface what matters:
   Flag any such event that occurred and was NOT assessed.
 
 **Anomaly checks (the valuable part — DIAGNOSE, don't just list):** skip floods · state↔IBKR desync ·
-connection errors / stalled bot (check log freshness) · stops fired / whipsaw · positions underwater ·
-mega-cap catalysts that didn't react · fill-vs-limit gaps.
+connection errors · **dead/stalled bot — use PROCESS liveness, not log freshness** (the IBKR bots sleep
+between sessions, so a stale log is normal; a missing *process* is the fault — run
+`trading_common/bot_watchdog.py`, or `pgrep -af "--mode live"`) · stops fired / whipsaw · positions
+underwater · mega-cap catalysts that didn't react · fill-vs-limit gaps.
 
 **Weak-trade post-mortem (the learning loop):** for every **losing or near-flat** closed trade — and
 any same-day **fade** (popped, then gave it back) — do a quick post-mortem: *why* did it underperform?
