@@ -33,27 +33,33 @@ Then per bot, only surface what matters:
 **3. commodity_breakout_bot** — `/home/nicu/work/repos/commodity_breakout_bot`
 - Today's scan + any orders/positions. Usually quiet by design — silence is normal, not a fault.
 
-**4. fx_macro_bot** — `/home/nicu/work/repos/fx_macro_bot` (`fx_macro_trader.py`)
-- **FORWARD TEST, tiny real money** (OANDA acct 001-001-5457117-001, ~$2k gross of ~$11k NAV — SEPARATE
-  from the IBKR account the other three share). Base = weekly COT-positioning; overlay = Claude
-  central-bank regime-VETO. Thin/unproven by design — the point of the daily check is to accumulate the
-  forward-validation record and catch breakage, not to expect P&L yet.
-- **Liveness first:** is the process running? It polls hourly and rebalances weekly (on a new COT week),
-  so most days = "no new COT week, no trade" (normal). Check the newest log's timestamp for freshness;
-  a stalled process is the main silent failure.
-- `journal/fx_state.json`: `last_rebalance_week`, active `vetoes`, `nav_hwm`, and **`halted`** — if
-  `halted: true` the **kill switch tripped** (NAV fell >25% below HWM); flatten+halt fired and it needs a
-  manual restart. That is the #1 anomaly to surface.
-- `journal/counterfactual.jsonl` (the forward record): latest `rebalance` (asof_week, weights,
-  base_units vs applied_units, active_vetoes, NAV) and any `veto_eval` (regime_change / action /
-  confidence / reason). **On FOMC/ECB days**, report whether Claude fired a veto and, later, whether it
-  was right (did the flattened ccy keep moving against us?). **Base-vs-overlay attribution** is the whole
-  experiment — is the veto adding or subtracting?
-- `journal/trades.jsonl`: fills (`sent` true/false), reconcile deltas. Cross-check OANDA positions vs the
-  base target (run `python3 fx_macro_trader.py --mode live --audit`) — flag any drift beyond the deadband.
-- **Known v2 gaps to keep raising:** overlay only triggers on FOMC/ECB — it MISSES BOE/BOJ/RBA/RBNZ/BOC/SNB
-  and all unscheduled shocks (e.g. an emergency cut), which recall analysis showed is the binding risk.
-  Flag any such event that occurred and was NOT assessed.
+**4. fx_macro_bot** — `/home/nicu/work/repos/fx_macro_bot` (`event_drift_trader.py`)
+- **FORWARD TEST, tiny real money** (OANDA acct 001-001-5457117-001, SEPARATE from the IBKR account the other
+  three share). The bot is now the **intraday event-drift** strategy (the COT `fx_macro_trader.py` is retired,
+  kept as a fallback file). On a US HIGH-impact **data release**, at +15min it enters EUR/USD & GBP/USD in each
+  pair's own initial-reaction direction (mechanical base — backtested t≈4.6), gated by a **Claude take/skip/veto
+  reasoning gate** (Phase 2), and **flattens all at 20:00 UTC (flat overnight)**. `per_trade_usd=1000`/pair.
+- **Liveness first:** is the process running? It's event-driven, so **no trades on days with no US-HIGH data**
+  (normal) — do NOT read silence as breakage; check process/log freshness (the watchdog tracks it). A stalled
+  process through a data day is the main silent failure.
+- `journal/event_drift_state.json`: today's `events` + each `status` (pending/entered/**missed**/skipped_gate),
+  `nav_hwm`, and **`halted`** — if `halted:true` the **kill switch tripped** (NAV >25% below HWM); manual restart
+  needed = #1 anomaly. **`missed`** = the bot wasn't up at the event's +15min window (recall gap — flag it).
+- `journal/event_drift_counterfactual.jsonl` (**the core forward record**): per event, `reactions`, `base_take`
+  (what the mechanical base would do) vs the `gate` decision (take/skip/veto + confidence + reason) and `gated_ok`.
+  **This is the whole experiment — is the Claude gate ADDING value or subtracting?** For each event assess, with
+  hindsight: did SKIPPED/vetoed events reverse (good skip) or drift (bad skip)? did TAKEN events drift (good) or
+  reverse (bad)? Track gate hit-rate vs the mechanical base over time. Read the gate `reason` for calibration.
+- `journal/event_drift_trades.jsonl`: fills (`sent` true/false), reaction/direction/units. `event_drift_equity.jsonl`:
+  NAV/**financing** — since the book is flat overnight, **financing should be ≈0**; any nonzero financing delta
+  means a position was held overnight (a bug — flag it).
+- **Exposure watch (no aggregate cap by design):** positions **stack** across a multi-event day until the 20:00
+  flatten. On busy data days, add up the day's entries and flag if peak notional approached/﻿exceeded NAV
+  (~$11k) — at $1k/pair that's ~5+ concurrent events; unlikely but watch it.
+- **Cross-check** open positions vs intent: `python3 event_drift_trader.py --mode live --audit`. Confirm all flat
+  after 20:00 UTC.
+- **Known gaps to keep raising:** USD-HIGH data releases only (pairs' own-currency events untested); **FOMC** is
+  vetoed by design (naive-follow reverses there) pending the **Flavor-B presser manager**; speeches excluded.
 
 **Anomaly checks (the valuable part — DIAGNOSE, don't just list):** skip floods · state↔IBKR desync ·
 connection errors · **dead/stalled bot — use PROCESS liveness, not log freshness** (the IBKR bots sleep
@@ -73,13 +79,16 @@ effort on what didn't work. This is *review*, not action.
 is not just to catch breakage but to make the bots **better over time**. ALWAYS end with a short
 **"Ideas to do better"** section — concrete, specific, and prioritized (most valuable first). Actively
 think about what would move the needle; do not wait to be asked. Draw from, at minimum:
-- **New data sources / feeds** — e.g. a real-time macro feed for the FX overlay v2 (BOE/BOJ/RBA/RBNZ/BOC/SNB
-  + unscheduled shocks); a better/broader news feed or CB calendar; alternative sentiment inputs; funding/
-  swap data; options-implied vol for regime detection; a practice-account token for safe FX shakeouts.
+- **New data sources / feeds** — e.g. a structured economic-calendar feed with lower latency than the
+  FXStreet/ForexFactory scrape (Finnhub/FMP free tier) for the event-drift bot; each pair's own-currency events
+  (BOE→GBP etc.) beyond USD-HIGH; a better/broader news feed; alternative sentiment inputs; a practice-account
+  token for safe FX shakeouts.
 - **New signals / strategies / filters** — a candidate factor, a guard for a recurring loss pattern, a
-  per-strategy threshold, a cross-bot regime signal.
+  per-strategy threshold, a cross-bot regime signal; **Flavor-B FOMC-presser manager** (the event-drift bot vetoes
+  FOMC today — the step-by-step presser reasoning is the planned unlock); more pairs/events once validated.
 - **Prompt / model tuning** — where Claude over- or under-filters (materiality, mega-cap, confidence
-  calibration), reusing what works in one bot for another.
+  calibration); **tune the event-drift GATE prompt against its base-vs-gated counterfactual** (is it skipping
+  winners / taking reversers?); reuse what works in one bot for another.
 - **Risk & sizing** — capacity/leverage, correlation/concentration caps, kill-switch thresholds, the
   shared-buying-power constraint across the IBKR bots.
 - **Observability / infra** — logging gaps, reconciliation blind spots, alerting, stale-process detection,
