@@ -29,6 +29,7 @@ Then per bot, only surface what matters:
 - `state/{core,satellite,pmgap}_state.json`: open positions.
 - Latest `logs/session_*.log`: entries, exits, **stop fills**, errors, IBKR disconnects.
 - **Reconcile**: if a state file shows shares open but the log shows that strategy's exit bracket (`order_ref`) FILLED, flag the desync. Cross-check current SOXL price vs entries.
+- **Live-broker cross-check (do this — logs are NOT enough):** a state file can claim shares that the account doesn't hold if the position was closed **externally/manually** (no exit bracket in the log → invisible to log-based checks). This bit us 2026-07-01: `core_state.json` said 71 shares for *days* while the account was flat, and every review "confirmed" 71 from the stale file. So compare state files to **live IBKR positions**, not just the log.
 
 **3. commodity_breakout_bot** — `/home/nicu/work/repos/commodity_breakout_bot`
 - Today's scan + any orders/positions. Usually quiet by design — silence is normal, not a fault.
@@ -61,9 +62,22 @@ Then per bot, only surface what matters:
 - **Known gaps to keep raising:** USD-HIGH data releases only (pairs' own-currency events untested); **FOMC** is
   vetoed by design (naive-follow reverses there) pending the **Flavor-B presser manager**; speeches excluded.
 
-**Anomaly checks (the valuable part — DIAGNOSE, don't just list):** skip floods · state↔IBKR desync ·
-connection errors · **dead/stalled bot — use PROCESS liveness, not log freshness** (the IBKR bots sleep
-between sessions, so a stale log is normal; a missing *process* is the fault — run
+**Live-broker position cross-check (run once; covers all 3 IBKR bots — they share acct U2417906):** query
+IBKR directly and compare to every bot's state/journal. Catches positions closed **externally/manually** that
+log-based checks miss (the 2026-07-01 soxl stale-71 desync). Read-only, unique clientId so it won't disturb
+running bots:
+```python
+from ib_async import IB
+ib = IB(); ib.connect("127.0.0.1", 4001, clientId=88, timeout=20)   # 4001 = live gateway
+print({r.tag: r.value for r in ib.accountSummary() if r.tag in ("NetLiquidation","TotalCashValue","GrossPositionValue")})
+for p in ib.positions(): print(p.contract.symbol, p.position, p.avgCost)
+ib.disconnect()
+```
+Then flag any mismatch: a state file / journal claiming a position the account doesn't hold (or vice-versa).
+
+**Anomaly checks (the valuable part — DIAGNOSE, don't just list):** skip floods · state↔IBKR desync (use the
+live cross-check above, not just logs) · connection errors · **dead/stalled bot — use PROCESS liveness, not log
+freshness** (the IBKR bots sleep between sessions, so a stale log is normal; a missing *process* is the fault — run
 `trading_common/bot_watchdog.py`, or `pgrep -af "--mode live"`) · stops fired / whipsaw · positions
 underwater · mega-cap catalysts that didn't react · fill-vs-limit gaps.
 
