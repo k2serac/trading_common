@@ -1,0 +1,15 @@
+{
+  "name": "P&L Bot (Telegram)",
+  "description": "Read-only Telegram service: message 'pnl' (or balance/positions) and it replies with IBKR + OANDA NAV/cash, day P&L, and each open position's unrealized $ and % gain/loss. Lets you check P&L without logging into TWS elsewhere (which kills the local gateway). Responds only to your TELEGRAM_CHAT_ID; places no orders. Creds auto-loaded from the bots' .env.launcher.",
+  "main": "telegram_pnl_bot.py",
+  "modes": [
+    {
+      "id": "run",
+      "label": "Run",
+      "description": "Start the P&L Telegram listener (long-running). Then message 'pnl' anytime.",
+      "main": "telegram_pnl_bot.py",
+      "args": []
+    }
+  ],
+  "env": []
+}

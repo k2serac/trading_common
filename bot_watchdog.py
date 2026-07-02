@@ -45,6 +45,8 @@ BOTS = {
     # fx_macro_bot repo now runs the event-drift bot (COT trader retired as fallback)
     "fx_macro_bot":           {"script": "event_drift_trader.py",
                                "state": REPOS / "fx_macro_bot/journal/event_drift_state.json"},
+    # P&L Telegram service — a utility daemon, no --mode live flag
+    "telegram_pnl_bot":       {"script": "telegram_pnl_bot.py", "require_mode_live": False},
 }
 _ONESHOT = ("--audit", "--dry-run", "--once")
 
@@ -54,11 +56,11 @@ def _cmdlines() -> list[str]:
     return r.stdout.splitlines()
 
 
-def _is_running(script: str, lines: list[str]) -> bool:
-    """A live daemon = a python cmdline with the script + --mode live, and NOT a
-    one-shot audit/dry-run/once run."""
+def _is_running(script: str, lines: list[str], require_live: bool = True) -> bool:
+    """Running = a python cmdline with the script, not a one-shot run. Trading bots
+    also require '--mode live'; utility daemons (require_live=False) just need the script."""
     for ln in lines:
-        if script in ln and "--mode live" in ln and not any(f in ln for f in _ONESHOT):
+        if script in ln and not any(f in ln for f in _ONESHOT) and (not require_live or "--mode live" in ln):
             return True
     return False
 
@@ -91,8 +93,8 @@ def _check_all(fx_max_age_min: int, only: str | None) -> list[tuple[str, str]]:
     for name, cfg in BOTS.items():
         if only and name != only:
             continue
-        if not _is_running(cfg["script"], lines):
-            issues.append((f"{name}:down", f"{name}: NOT RUNNING (no live daemon for {cfg['script']})."))
+        if not _is_running(cfg["script"], lines, cfg.get("require_mode_live", True)):
+            issues.append((f"{name}:down", f"{name}: NOT RUNNING (no process for {cfg['script']})."))
             continue                                     # if down, skip deeper checks
         if "state" in cfg:
             issues += _fx_depth_check(cfg["state"], fx_max_age_min)
