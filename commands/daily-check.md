@@ -86,8 +86,19 @@ any same-day **fade** (popped, then gave it back) — do a quick post-mortem: *w
 Candidates: mega-cap non-reaction · anticipated / priced-in · label-expansion vs new approval ·
 "sell the news" · late or bad entry · wrong catalyst type · whipsaw. Then suggest **one concrete
 improvement** (a prompt tweak, a new filter/guard, a threshold) as a **review note for future
-iteration**, and flag any pattern that recurs across days. Winners need no post-mortem — focus the
-effort on what didn't work. This is *review*, not action.
+iteration**, and flag any pattern that recurs across days. This is *review*, not action.
+
+**Winning-trade analysis (MANDATORY — amplify what works, do this too, not only losers):** for every
+**winning** closed trade — and any strong intraday runner — do the mirror-image post-mortem: *why* did
+it work, and how do we get **more** of them? Look at the winners' shared traits: catalyst/strategy type,
+`confidence` score, gap size at entry, entry timing, market-cap bucket, sector, and the day's regime.
+Find the **common thread across the day's (and recent) winners** — e.g. "CompanyUpgrade small/mid-caps,
+gap 1–3%, conf ≥7 keep winning." Then propose **one concrete way to press that edge** as a review note:
+lift the winning strategy's slot allocation or per-trade size, loosen a filter that would have let *more*
+of these through, prioritize the winning catalyst type when capacity-bound (`MaxActiveTrades`), or nudge
+thresholds toward the winning confidence/gap band. Flag winner patterns that recur across days and feed
+them into the Ideas section. Cutting losers and pressing winners are equally part of the edge — give the
+gainers the same analytical weight as the losers, not an afterthought. This is *review*, not action.
 
 **★ Continuous improvement (MANDATORY — never skip this, even on a quiet day).** The point of this review
 is not just to catch breakage but to make the bots **better over time**. ALWAYS end with a short
@@ -107,7 +118,7 @@ think about what would move the needle; do not wait to be asked. Draw from, at m
   shared-buying-power constraint across the IBKR bots.
 - **Observability / infra** — logging gaps, reconciliation blind spots, alerting, stale-process detection,
   automating a manual step.
-Tie each idea to something SEEN in the data where possible (a loss, a skip, a miss, a gap), give a one-line
+Tie each idea to something SEEN in the data where possible (a **winner to amplify**, a loss, a skip, a miss, a gap), give a one-line
 rationale + rough effort, and **flag recurring themes across days** (if the same idea recurs, escalate it).
 These are proposals for future iteration — surface them proactively, but this is *review*: implement nothing
 without my OK.
