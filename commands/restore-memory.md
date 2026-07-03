@@ -12,14 +12,22 @@ If an argument is given (`$ARGUMENTS`), restore only the repo whose name it matc
 
 ## The 6 repos and their memory dirs
 
-| Repo | Memory dir |
-|---|---|
-| us_news_stock_bot | `/home/nicu/.claude/projects/-home-nicu-work-repos-us-news-stock-bot/memory` |
-| soxl_index_bot | `/home/nicu/.claude/projects/-home-nicu-work-repos-soxl-index-bot/memory` |
-| commodity_breakout_bot | `/home/nicu/.claude/projects/-home-nicu-work-repos-commodity-breakout-1/memory` *(legacy `-1` project key)* |
-| fx_macro_bot | `/home/nicu/.claude/projects/-home-nicu-work-repos-fx-macro-bot/memory` |
-| trading_common | `/home/nicu/.claude/projects/-home-nicu-work-repos-trading-common/memory` |
-| bot_launcher_gui | `/home/nicu/.claude/projects/-home-nicu-work-repos-bot-launcher-gui/memory` |
+| Repo | Memory dir | What it is |
+|---|---|---|
+| us_news_stock_bot | `/home/nicu/.claude/projects/-home-nicu-work-repos-us-news-stock-bot/memory` | News-driven US stock bot: Benzinga news + Claude sentiment + IBKR execution |
+| soxl_index_bot | `/home/nicu/.claude/projects/-home-nicu-work-repos-soxl-index-bot/memory` | SOXL semiconductor bot: 200d-MA core regime + intraday-momentum satellite |
+| commodity_breakout_bot | `/home/nicu/.claude/projects/-home-nicu-work-repos-commodity-breakout-1/memory` *(legacy `-1` project key)* | Commodity futures breakout bot |
+| fx_macro_bot | `/home/nicu/.claude/projects/-home-nicu-work-repos-fx-macro-bot/memory` | FX macro bot on OANDA: intraday event-drift + Claude take/skip gate |
+| trading_common | `/home/nicu/.claude/projects/-home-nicu-work-repos-trading-common/memory` | Shared library imported by all bots (see below) |
+| bot_launcher_gui | `/home/nicu/.claude/projects/-home-nicu-work-repos-bot-launcher-gui/memory` | GUI to launch/manage any bot (see below) |
+
+Four of the repos are trading bots. The other two are shared infrastructure:
+
+- **trading_common** — shared library of common utilities used by all the bots (e.g. IBKR
+  connection/execution helpers, `ClaudeSentiment`, the `/daily-check` tooling). It's a dependency
+  every bot imports, not a strategy of its own; commit it like any other bot repo.
+- **bot_launcher_gui** — a GUI front-end for launching and managing any of the bots from one place,
+  rather than starting each bot's process by hand.
 
 ## What to do
 
