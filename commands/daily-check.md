@@ -53,7 +53,9 @@ Then per bot, only surface what matters:
   reverse (bad)? Track gate hit-rate vs the mechanical base over time. Read the gate `reason` for calibration.
 - `journal/event_drift_trades.jsonl`: fills (`sent` true/false), reaction/direction/units. `event_drift_equity.jsonl`:
   NAV/**financing** — since the book is flat overnight, **financing should be ≈0**; any nonzero financing delta
-  means a position was held overnight (a bug — flag it).
+  means a position was held overnight (a bug — flag it). NOTE: the OANDA account carries a **static
+  ~−$26 legacy financing** baseline from the retired COT trader — a fixed offset, not a new charge. Watch
+  the financing **delta/change**, not the absolute value; only a *change* implies an overnight hold.
 - **Exposure watch (no aggregate cap by design):** positions **stack** across a multi-event day until the 20:00
   flatten. On busy data days, add up the day's entries and flag if peak notional approached/﻿exceeded NAV
   (~$11k) — at $1k/pair that's ~5+ concurrent events; unlikely but watch it.
