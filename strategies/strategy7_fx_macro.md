@@ -1,3 +1,10 @@
+---
+name: strategy7-fx-macro
+description: "Strategy 7 concept — FX swing on majors. Trend skeleton (backtestable) + Claude central-bank/macro news overlay. Carry rejected. OANDA platform."
+metadata:
+  type: project
+---
+
 # Strategy 7 — FX Macro Swing
 
 ## Thesis

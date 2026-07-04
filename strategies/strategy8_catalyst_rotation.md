@@ -1,4 +1,24 @@
+---
+name: strategy8-catalyst-rotation
+description: "Strategy 8 — multi-day catalyst hold REJECTED (days-2-5 return is beta, not drift). Catalysts stay same-day (S5); superseded by S9. Rich conviction-score/peer/exit research retained as reference."
+metadata:
+  type: project
+---
+
 # Strategy 8 — Catalyst-Momentum Rotation
+
+> **STATUS (2026-07-03): the multi-day *catalyst* hold is REJECTED — superseded by
+> [[strategy9-xsectional-momentum]].** Live examples (Micron: upgrade → up day 1, then the market
+> dragged it down; Synopsys: flat day 1, then the market *carried* it up) show the days-2-5 return of a
+> catalyst name is **beta-dominated, not idiosyncratic catalyst drift** — so holding catalysts
+> multi-day harvests beta you'd get cleaner/cheaper from an ETF (fails the edge-vs-beta test) while
+> taking single-name gap risk. The alpha label was *correct* on Synopsys (made money, catalyst added
+> nothing). **Decision: keep catalysts SAME-DAY (the real Strategy 5 edge, where the day-1
+> idiosyncratic pop lives); capture the medium-term horizon via a genuine FACTOR = S9 cross-sectional
+> momentum.** The conviction-score / peer-read-through / exit-stack research below is retained as
+> reference (parts feed S9 — the alpha label, sector-ETF benchmarking), but the "hold catalysts
+> multi-day for the drift" thesis is parked. If ever revisited, the make-or-break test is: do catalyst
+> names beat their **sector ETF** (not SPY) over days 2-5? Merely tracking it = no edge.
 
 ## Thesis
 

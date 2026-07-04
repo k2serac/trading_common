@@ -1,3 +1,10 @@
+---
+name: strategy9-xsectional-momentum
+description: "Strategy 9 — cross-sectional momentum sleeve (multi-sector US equity, monthly rebalance). The book's medium-term horizon; backtest-first. Supersedes S8's rejected multi-day catalyst hold."
+metadata:
+  type: project
+---
+
 # Strategy 9 — Cross-Sectional Momentum (Multi-Sector Swing)
 
 ## Thesis

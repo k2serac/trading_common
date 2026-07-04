@@ -1,3 +1,10 @@
+---
+name: strategy6-social-rotation
+description: "Strategy 6 — social sentiment + sector rotation (Benzinga + Reddit + Opus). PARKED 2026-06-25 as a standalone; salvage as a social-tailwind FACTOR in #8."
+metadata:
+  type: project
+---
+
 # Strategy 6 — Social Sentiment + Sector Rotation
 
 > **STATUS: PARKED as a standalone strategy (2026-06-25).** Deprioritized behind #8 (cooking on a
