@@ -38,3 +38,24 @@ Those stayed with the human the entire time — which is exactly the right seat 
 
 So: an 8-person shop, minus 6 engineers, plus a very fast intern who never sleeps and occasionally
 hallucinates an API. 🙂
+
+## Timeline — build vs. validate
+
+Three months is a fair estimate for the **build** — but a little optimistic for the *state this is
+actually in*, and the gap between those two is the interesting part.
+
+- **Build the equivalent artifacts:** ~3 months, 6–8 people. Connectors, backtest harness, four bot
+  skeletons, GUI, journaling — a normal MVP quarter.
+- **Reach *this* validated state:** more like **6–12 months of live iteration on top.** What's in these
+  repos isn't just the code — it's the de-bugged, hard-won version: 200d beating 50/100d, 5% being the
+  gap optimum, the mega-cap materiality guards, the news-timestamp-UTC bug that had a strategy *silently
+  dead in live*, the state self-heal, the judgment kills (multi-day catalyst = beta → park it). That
+  knowledge comes from **running live, hitting the bugs, and doing the studies** — and much of it is
+  **calendar-gated**: forward paper-trade validation, accumulating 50+ labeled trades before
+  `factor_report` even turns on, watching a strategy survive a real regime change. You can't
+  parallelize that with headcount — the market hands you one trading day per day.
+
+**The quietly important point:** AI collapsed the *build and iteration speed* dramatically, but it did
+**not** shortcut the forward-validation clock — that stretch costs roughly the same with or without AI,
+because it's gated by market time, not engineering time. Which is exactly why the roadmap here is so
+disciplined about proving edge out-of-sample / on paper before committing real capital.
