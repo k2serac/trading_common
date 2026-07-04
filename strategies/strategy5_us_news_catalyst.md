@@ -1,3 +1,10 @@
+---
+name: strategy5-us-news-catalyst
+description: "Strategy 5 — US News Catalyst: Benzinga news -> Claude sentiment -> confirmed reaction-band entry -> same-day exit. 5 catalyst types. LIVE (us_news_stock_bot)."
+metadata:
+  type: project
+---
+
 # Strategy 5 — US News Catalyst (Intraday News Momentum)
 
 **Status:** LIVE · `us_news_stock_bot`

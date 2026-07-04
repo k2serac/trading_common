@@ -1,3 +1,10 @@
+---
+name: strategy3-soxl-pmgap
+description: "Strategy 3 — SOXL PM-Gap: buy the open on >=5% pre-market gap in a bullish regime (SOXX>200d MA), no-overlap. +243%/5yr; 5% is the optimum. LIVE (soxl_index_bot)."
+metadata:
+  type: project
+---
+
 # Strategy 3 — SOXL PM-Gap (Pre-Market Gap Momentum)
 
 **Status:** LIVE · `soxl_index_bot` · capital pool: own

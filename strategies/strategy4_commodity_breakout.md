@@ -1,3 +1,10 @@
+---
+name: strategy4-commodity-breakout
+description: "Strategy 4 — Commodity Breakout: metals dormancy/coiled-spring Donchian breakout + Claude news gate (GC/SI/PL). Energy/grains seasonal TBD. LIVE (metals only, commodity_breakout_bot)."
+metadata:
+  type: project
+---
+
 # Strategy 4 — Commodity Breakout
 
 **Status:** LIVE (metals dormancy only) · `commodity_breakout_bot`

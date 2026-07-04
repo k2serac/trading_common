@@ -1,3 +1,10 @@
+---
+name: strategy2-soxl-satellite
+description: "Strategy 2 — SOXL Satellite: intraday momentum add when semis lead (QQQ>VWAP + SOXX outperforms QQQ >=0.75% + SOXX>5d MA). +257%/5yr. LIVE (soxl_index_bot)."
+metadata:
+  type: project
+---
+
 # Strategy 2 — SOXL Satellite (Intraday Momentum / Relative Strength)
 
 **Status:** LIVE · `soxl_index_bot` · capital pool: own

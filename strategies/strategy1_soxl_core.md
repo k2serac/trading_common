@@ -1,3 +1,10 @@
+---
+name: strategy1-soxl-core
+description: "Strategy 1 — SOXL Core: hold 3x SOXL while SOXX > 200d MA, exit first day below. Crash-avoidance edge (2022: -7.7% vs -86.5% B&H). +999%/5yr. LIVE (soxl_index_bot)."
+metadata:
+  type: project
+---
+
 # Strategy 1 — SOXL Core (200-day MA Regime)
 
 **Status:** LIVE · `soxl_index_bot` · capital pool: own
