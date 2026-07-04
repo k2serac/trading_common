@@ -15,11 +15,13 @@ rejected. (The day-to-day working notes live in Claude memory; these are the dur
 
 ## Planned (in research/design)
 
-Priority order: **#8 first** (cooking now on a proven base — data accruing), **#7 next** (FX macro).
+Priority order: **#9 first** (backtest-first, decades of data — fastest to validate), **#8** (data
+accruing on a proven base), **#7 next** (FX macro).
 
 | # | Strategy | One-line |
 |---|---|---|
-| 8 | [Catalyst Rotation](strategy8_catalyst_rotation.md) | Multi-day catalyst-momentum portfolio w/ a freshness-decaying conviction score. The swing evolution of #5. **Phase 1 (data accrual) live.** |
+| 9 | [Cross-Sectional Momentum](strategy9_xsectional_momentum.md) | Multi-sector US equity momentum sleeve, monthly rebalance — the book's medium-term (weeks-months) horizon. Backtest-first. Born from #8's beta-dominated multi-day post-mortem: keep catalysts same-day, capture the horizon via a *factor*. |
+| 8 | [Catalyst Rotation](strategy8_catalyst_rotation.md) | Multi-day catalyst-momentum portfolio w/ a freshness-decaying conviction score. The swing evolution of #5. **Multi-day *catalyst* hold rejected** (days-2-5 return is beta, not drift → superseded by #9); scoped back to "catalysts are a same-day #5 edge." |
 | 7 | [FX Macro Swing](strategy7_fx_macro.md) | Majors trend skeleton + Claude central-bank overlay (OANDA). Carry rejected. |
 | 6 | [Social Rotation](strategy6_social_rotation.md) | Reddit + Benzinga + Opus → sector-rotation ETF swing. **PARKED 2026-06-25** — weakest fuel (social), signal/vehicle mismatch; salvage as a *social-tailwind factor in #8*, not a standalone bot. |
 
