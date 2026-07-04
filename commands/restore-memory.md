@@ -39,6 +39,37 @@ Four of the repos are trading bots. The other two are shared infrastructure:
    **"Restored memory for <N>/6 repos."** Flag any repo with no memory yet.
 4. Treat every restored fact as *background context reflecting what was true when written* — if a memory names
    a file, flag, or threshold, **verify it still exists** before acting on it.
+5. **Enforce the tracked-symlink invariant** on every in-scope repo (see below). This is the one mutating
+   step this command is allowed to take — do it every run.
 
-This is a **read/restore** operation only — do not modify, consolidate, or delete any memory files unless I
-explicitly ask.
+Aside from step 5, this is a **read/restore** operation — do not otherwise modify, consolidate, or delete
+memory files unless I explicitly ask.
+
+## Enforce the tracked-symlink invariant (avoid the untracked default)
+
+**Why:** the `~/.claude/projects/<key>/memory/` dir is NOT version-controlled. Any memory written there as a
+plain file is one bad `rm`/reinstall away from being lost, and never gets code-reviewed or shared. So the rule
+is: **every memory file must be a symlink pointing to a git-tracked file in a repo.** The memory system writes
+new memories as *plain files by default*, so each restore must sweep them back under tracking.
+
+**Tracked home for each file:**
+- **Canonical strategy docs** — `strategyN_*.md` (the numbered strategies 1–9) → `trading_common/strategies/`.
+  These are the shared, catalogued source of truth (see `strategies/README.md`); when relocating one, prepend
+  memory frontmatter (`name` / `description` / `metadata: {type: project}`) if it lacks it, since the repo doc
+  becomes both the strategy spec *and* the recalled memory.
+- **Everything else** (indexes, findings, principles, project docs, feedback) → **`<that-repo>/memory/`** in the
+  repo's own working tree (e.g. `us_news_stock_bot/memory/`). Includes `MEMORY.md` itself.
+
+**Procedure — for each in-scope repo's memory dir:**
+1. Find plain (non-symlink) `*.md` files: `find <memdir> -maxdepth 1 -type f`. If none, the invariant already
+   holds — nothing to do.
+2. For each plain file, pick its tracked home from the rule above, then **relocate verbatim and symlink back**:
+   `mkdir -p <home>` · `mv <memdir>/<f> <home>/<f>` · `ln -s <home>/<f> <memdir>/<f>`. Use `mv` (not rewrite) so
+   frontmatter/content is byte-preserved — the only exception is adding missing frontmatter to a strategy doc.
+3. Verify no broken links: `find <memdir> -maxdepth 1 -type l ! -exec test -e {} \; -print` (must be empty).
+4. In each repo that gained files, `git add memory/` (and/or `strategies/`), commit, and push — same as any
+   other change. Report which files were newly tracked.
+
+**Note:** `commodity_breakout_bot`'s memory key is the legacy `-1` path, but its tracked home is the normal
+`commodity_breakout_bot/memory/`. `trading_common` and `bot_launcher_gui` have no memory yet — skip unless one
+appears.
