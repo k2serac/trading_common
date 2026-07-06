@@ -37,6 +37,11 @@ import anthropic
 from ib_async import ContFuture, IB, Index, LimitOrder, MarketOrder, Stock, StopLimitOrder, StopOrder
 from openbb import obb
 
+from typing import TYPE_CHECKING
+
+if TYPE_CHECKING:
+    from .telegram_lib import TelegramNotifier
+
 # ---------------------------------------------------------------------------
 # Module-level logger — callers configure handlers/level via logging.basicConfig
 # ---------------------------------------------------------------------------
@@ -1200,6 +1205,7 @@ class ClaudeSentiment:
         context_dir: str = "config/context",
         use_web_search: bool = False,
         web_search_verify: bool = False,
+        notifier: "TelegramNotifier | None" = None,
     ) -> None:
         if not os.environ.get("ANTHROPIC_API_KEY"):
             raise EnvironmentError(
@@ -1209,6 +1215,7 @@ class ClaudeSentiment:
         self.model = model
         self._use_web_search = use_web_search
         self.web_search_verify = web_search_verify
+        self._notifier = notifier
         self._client = anthropic.Anthropic()
         self._prompts: dict[str, str] = self._load_prompts(prompts_dir)
         self._context: dict[str, str] = self._load_context(context_dir)
@@ -1423,6 +1430,13 @@ class ClaudeSentiment:
                     logger.critical(
                         "Anthropic credit balance exhausted — shutting down to prevent further charges."
                     )
+                    if self._notifier is not None:
+                        self._notifier.alert(
+                            "Anthropic credit/spend limit hit (HTTP 400 'credit balance is too low') "
+                            "— bot shutting down. Top up credits or raise the monthly spend limit, "
+                            "then restart.",
+                            bot="us_news",
+                        )
                     raise SystemExit(1)
                 if exc.status_code in _RETRYABLE_CODES and attempt < _MAX_RETRIES:
                     wait = 2 ** attempt
