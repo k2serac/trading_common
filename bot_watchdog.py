@@ -39,7 +39,11 @@ _STATE = HERE / "logs" / "watchdog_state.json"
 
 # name -> {script substring, optional fx-style heartbeat state file}
 BOTS = {
-    "us_news_stock_bot":      {"script": "daytrader.py"},
+    # us_news_stock_bot: SHELVED 2026-07-07 — ~breakeven over 62 trades (edge carried by
+    # 2 outlier days), high maintenance burden; bot intentionally stopped. Liveness
+    # monitoring disabled so the watchdog doesn't alert on an expected-down bot.
+    # Re-enable this line to resume monitoring when the strategy is turned back on.
+    # "us_news_stock_bot":      {"script": "daytrader.py"},
     "soxl_index_bot":         {"script": "soxl_trader.py"},
     "commodity_breakout_bot": {"script": "commodity_trader.py"},
     # fx_macro_bot repo now runs the event-drift bot (COT trader retired as fallback)
